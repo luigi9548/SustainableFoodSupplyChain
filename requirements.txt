@@ -1,0 +1,10 @@
+eth-utils
+eth-keys
+pyyaml
+web3
+py-solc-x
+click
+rich
+colorama
+faker
+cryptography
