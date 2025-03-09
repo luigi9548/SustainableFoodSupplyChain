@@ -5,6 +5,7 @@ package-lock.json
 package.json
 truffle-config.js
 *.vscode
+*.vs
 *.venv
 accounts.txt
 *contract_address.txt

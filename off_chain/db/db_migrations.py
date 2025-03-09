@@ -19,7 +19,7 @@ cur.execute('''CREATE TABLE Credentials (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
             password TEXT NOT NULL,
-            role TEXT CHECK(role IN ('USER_CERTIFICATORE', 'USER_ATTORE', 'ADMIN')) NOT NULL,
+            role TEXT CHECK(role IN ('USER_CERTIFIER', 'USER_ACTOR', 'ADMIN')) NOT NULL,
             public_key TEXT NOT NULL,
             private_key TEXT NOT NULL,
             temp_code TEXT,
@@ -34,7 +34,7 @@ cur.execute('''CREATE TABLE Credentials (
 cur.execute('''CREATE TABLE Accounts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             credential_id INTEGER NOT NULL,
-            type TEXT CHECK(type IN ('AGRICOLTORE', 'CORRIERE', 'VENDITORE', 'PRODUTTORE', 'CERTIFICATOE')) NOT NULL,
+            type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
             name TEXT NOT NULL,
             licence_id INTEGER NOT NULL,
             lastname TEXT NOT NULL,
@@ -89,7 +89,7 @@ cur.execute('''CREATE TABLE Cron_Activities (
 def generate_random_licence():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-roles = ['AGRICOLTORE', 'CORRIERE', 'VENDITORE', 'PRODUTTORE']
+roles = ['FARMER', 'CARRIER', 'SELLER', 'PRODUCER']
 for role in roles:
     for _ in range(10):
         licence_number = generate_random_licence()
