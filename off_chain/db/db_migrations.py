@@ -1,8 +1,9 @@
 import random
 import sqlite3
 import string
+from config import config
 
-con = sqlite3.connect("Scfc")
+con = sqlite3.connect(config["db_path"])
 cur = con.cursor()
 
 
@@ -50,14 +51,14 @@ cur.execute('''CREATE TABLE Accounts (
 # Licences table to verufy the authenticity of role and mitigate misuese (aggiorno io le tabelle sul misuso, in fase di inserimento utente verifichiamo al sua licenza)
 cur.execute('''CREATE TABLE Licences (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT CHECK(type IN ('AGRICOLTORE', 'CORRIERE', 'VENDITORE', 'PRODUTTORE', 'CERTIFICATORE')) NOT NULL,
+            type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
             licence_number TEXT NOT NULL UNIQUE
             );''')
 
 
 cur.execute('''CREATE TABLE Activities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT CHECK(type IN ('investimento in progetto per riduzione', 'praticare azione')) NOT NULL,
+            type TEXT CHECK(type IN ('investment in a project for reduction', 'performing an action')) NOT NULL,
             description TEXT NOT NULL
             );''')
 

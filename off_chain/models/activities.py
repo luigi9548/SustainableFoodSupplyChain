@@ -1,8 +1,3 @@
-"""cur.execute('''CREATE TABLE Activities (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT CHECK(type IN ('investimento in progetto per riduzione', 'praticare azione')) NOT NULL,
-            description TEXT NOT NULL
-            );''')"""
 from models.model_base import Model
 
 class Activities(Model):
@@ -17,7 +12,7 @@ class Activities(Model):
 
         Parameters:
         - id: Unique identifier for the activity record  
-        - type: The category of activity ('investimento in progetto per riduzione', 'praticare azione')  
+        - type: The category of activity ('investment in a project for reduction', 'performing an action')  
         - description: An explanation of the activity  
 
         """

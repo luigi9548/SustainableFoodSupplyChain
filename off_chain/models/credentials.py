@@ -14,7 +14,7 @@ class Credentials(Model):
         - id: Unique identifier for the credentials record
         - username: Username associated with the credentials
         - password: Password for user authentication
-        - role: The role assigned to the user (USER_CERTIFICATORE, USER_ATTORE, ADMIN)
+        - role: The role assigned to the user ('USER_CERTIFIER', 'USER_ACTOR', 'ADMIN')
         - public_key: ...
         - private_key: ...
         - temp_code: Temporary code for two-factor authentication (optional)
