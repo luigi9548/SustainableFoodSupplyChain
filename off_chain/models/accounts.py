@@ -15,7 +15,7 @@ class Accounts(Model):
         Parameters:
         - id: Unique identifier for the account record
         - credential_id: User credentials id that is associated with this account
-        - type: The type of account ('AGRICOLTORE', 'CORRIERE', 'VENDITORE', 'PRODUTTORE', 'CERTIFICATORE')
+        - type: The type of account ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')
         - name: The first name of the account holder
         - licence_id: Licence id that is associated with this account
         - lastname: The last name of the account holder

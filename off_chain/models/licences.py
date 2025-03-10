@@ -1,10 +1,3 @@
-"""
-cur.execute('''CREATE TABLE Licences (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT CHECK(type IN ('AGRICOLTORE', 'CORRIERE', 'VENDITORE', 'PRODUTTORE', 'CERTIFICATORE')) NOT NULL,
-            licence_number TEXT NOT NULL UNIQUE
-            );''')
-"""
 from models.model_base import Model
 
 class Licences(Model):
@@ -19,7 +12,7 @@ class Licences(Model):
 
         Parameters:
         - id: Unique identifier for the licence record  
-        - type: The category of licence ('AGRICOLTORE', 'CORRIERE', 'VENDITORE', 'PRODUTTORE', 'CERTIFICATORE')  
+        - type: The category of licence ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')  
         - licence_number: A unique identifier assigned to the licence  
         """
         super().__init__()
