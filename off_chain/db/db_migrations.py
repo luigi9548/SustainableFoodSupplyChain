@@ -50,7 +50,7 @@ cur.execute('''CREATE TABLE Accounts (
 # Licences table to verufy the authenticity of role and mitigate misuese (aggiorno io le tabelle sul misuso, in fase di inserimento utente verifichiamo al sua licenza)
 cur.execute('''CREATE TABLE Licences (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT CHECK(type IN ('AGRICOLTORE', 'CORRIERE', 'VENDITORE', 'PRODUTTORE', 'CERTIFICATORE')) NOT NULL,
+            type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
             licence_number TEXT NOT NULL UNIQUE
             );''')
 
@@ -82,6 +82,15 @@ cur.execute('''CREATE TABLE Cron_Activities (
             co2_reduction DECIMAL NOT NULL,
             FOREIGN KEY (credential_id) REFERENCES Credentials(id),
             FOREIGN KEY (activity_id) REFERENCES Activities(id)
+            );''')
+
+cur.execute('''CREATE TABLE Products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            category TEXT CHECK(role IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
+            co2Emission INTEGER NOT NULL,
+            harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            sensorId INTEGER NOT NULL
             );''')
 
 # Inserting 10 random licences for each role except 'CERTIFICATORE'
