@@ -37,6 +37,14 @@ class DatabaseOperations:
     def check_username(self, username):
         self.cur.execute("SELECT COUNT(*) FROM Credentials WHERE username = ?", (username,))
         return -1 if self.cur.fetchone()[0] > 0 else 0
+    
+
+    def check_valid_licence(self, role, licence_number):
+        """
+        Checks if a valid licence exists for a given role.
+        """
+        self.cur.execute("SELECT COUNT(*) FROM Licences WHERE type = ? AND licence_number = ?", (role, licence_number))
+        return self.cur.fetchone()[0] > 0
 
     def get_credentials(self):
         self.cur.execute("SELECT * FROM Credentials")
