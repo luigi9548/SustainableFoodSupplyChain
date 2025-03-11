@@ -130,7 +130,7 @@ contract SupplyChainNFT is ERC721, Ownable {
      */
     function updateNFT(uint256 tokenId, uint256 emissions) external {
         require(ownerOf(tokenId) == msg.sender, "Not the owner of the NFT");
-        nfts[tokenId].emissions = emissions;
+        nfts[tokenId].emissions += emissions;
 
         logAction("Update ", msg.sender, " NFT transferred");
         emit NFTUpdated(tokenId, name, emissions);
