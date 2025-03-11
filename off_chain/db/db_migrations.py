@@ -13,6 +13,7 @@ cur.execute("DROP TABLE IF EXISTS Activities")
 cur.execute("DROP TABLE IF EXISTS Accounts_Activities")
 cur.execute("DROP TABLE IF EXISTS Cron_Activities")
 cur.execute("DROP TABLE IF EXISTS Licences")
+cur.execute("DROP TABLE IF EXISTS Products")
 
 # TODO do we want to leave the admin?
 # TODO public, private key, encrypt at rest.
