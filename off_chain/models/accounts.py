@@ -129,7 +129,7 @@ class Accounts(Model):
             self.conn.commit()
             print(Fore.GREEN + 'Information saved correctly!\n' + Style.RESET_ALL)
         except Exception as e: 
-            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL) #possiamo anche non stampare e??? boh
+            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL) #possiamo anche non stampare e??? boh -> rientra nella mitigazione del misuso secondo me stamperei
 
     def delete(self):
         """
