@@ -31,7 +31,8 @@ class DatabaseOperations:
                 return 0
             else:
                 return -1
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as e:
+            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL) #possiamo anche non stampare e??? boh -> rientra nella mitigazione del misuso secondo me stamperei
             return -1
 
     def check_username(self, username):

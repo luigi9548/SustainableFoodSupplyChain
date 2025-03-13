@@ -1,6 +1,6 @@
 from models.model_base import Model
 from colorama import Fore, Style, init
-from models.model_base import Model
+from db.db_operations import DatabaseOperations
 
 class Accounts(Model):
     """
@@ -8,7 +8,7 @@ class Accounts(Model):
     extending the functionality provided by the Model class.
     """
 
-    def __init__(self, id, credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail):
+    def __init__(self, id, credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail, db):
         """
         Initializes a new instance of Account class with the provided account  details.
 
@@ -37,6 +37,7 @@ class Accounts(Model):
         self.residence = residence
         self.phone = phone
         self.mail = mail
+        self.db = db
 
     # Getter methods for each attribute
     def get_id(self):
@@ -111,34 +112,31 @@ class Accounts(Model):
         Saves a new or updates an existing Accounts record in the database.
         Implements SQL queries to insert or update credentials based on the presence of an ID.
         """
-        try: 
-            if self.id is None:
-                # Inserts new accounts record into the database
-                self.cur.execute('''INSERT INTO Accounts (credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',  #Question marks as placeholders are used to prevent SQL Injection attacks
-                         (self.credential_id, self.type, self.name, self.licence_id, self.lastname, self.birthday, 
-                          self.birth_place, self.residence, self.phone, self.mail))
-                self.id = self.cur.lastrowid  # Updating the id with last inserted row id
-            else:
-                # Updates existing accounts record in the database 
-                self.cur.execute(
-                    '''UPDATE Accounts SET credential_id=?, type=?, name=?, licence_id=?, lastname=?, birthday=?, birth_place=?, residence=?, phone=?, mail=? 
-                       WHERE id=?''',
-                    (self.credential_id, self.type, self.name, self.licence_id, self.lastname, self.birthday, 
-                     self.birth_place, self.residence, self.phone, self.mail, self.id))
-            self.conn.commit()
+        if self.id is None:
+            # Inserts new accounts record into the database
+            result = db.register_account(self.credential_id, self.type, self.name, self.lastname, self.birthday,
+                                         self.birth_place, self.residence, self.phone, self.mail)
+            if result == 0:
+                self.id = self.cur.lastrowid
+        else:
+            # Updates existing accounts record in the database 
+            result = db.update_account(self.credential_id, self.type, self.name, self.licence_id, self.lastname, self.birthday, 
+                                        self.birth_place, self.residence, self.phone, self.mail, self.id)    
+        if result == 0:
             print(Fore.GREEN + 'Information saved correctly!\n' + Style.RESET_ALL)
-        except Exception as e: 
-            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL) #possiamo anche non stampare e??? boh -> rientra nella mitigazione del misuso secondo me stamperei
-
+        else:
+            print(Fore.RED + 'Error saving information!\n' + Style.RESET_ALL)
+        
     def delete(self):
         """
         Deletes an Account record from the database based on its ID.
         """
         if self.id is not None:
-            try:
-                self.cur.execute('DELETE FROM Accounts WHERE id=?', (self.id,))
-                self.conn.commit()
+            result = db.delete_account(self.id)
+            if result == 0:
                 print(Fore.GREEN + 'Account deleted successfully!\n' + Style.RESET_ALL)
-            except Exception as e:
-                print(Fore.RED + f'Error deleting account: {e}' + Style.RESET_ALL)
+            else:
+                print(Fore.RED + 'Error deleting account!\n' + Style.RESET_ALL)
+            return result
+        else:
+            return -1

@@ -7,7 +7,7 @@ class Cron_Activities(Model):
     This class defines the Cron_Activities model, which tracks detailed records of activities,  
     extending the functionality provided by the Model class.
     """
-    def __init__(self, id, description, update_datetime, creation_datetime, accepted, activity_id, co2_reduction):
+    def __init__(self, id, description, update_datetime, creation_datetime, accepted, activity_id, co2_reduction, db):
         """
         Initializes a new instance of the Cron_Activities class, representing a specific record of an activity  
         performed by a credentialed user.
@@ -30,6 +30,7 @@ class Cron_Activities(Model):
         self.accepted = accepted
         self.activity_id = activity_id
         self.co2_reduction = co2_reduction
+        self.db = db
 
     # Getter methods for each attribute
     def get_id(self):
@@ -58,31 +59,30 @@ class Cron_Activities(Model):
         Saves a new or updates an existing Cron_Activities record in the database.
         Implements SQL queries to insert or update credentials based on the presence of an ID.
         """
-        try: 
-            if self.id is None:
-                # Inserts new cron_activities record into the database
-                self.cur.execute('''INSERT INTO Cron_Activities (description, accepted, activity_id, co2_reduction)
-                                    VALUES (?, ?, ?, ?)''',  #Question marks as placeholders are used to prevent SQL Injection attacks
-                                 (self.description, self.accepted, self.activity_id, self.co2_reduction))
-                self.id = self.cur.lastrowid  # Updating the id with last inserted row id
-            else:
-                # Updates existing cron_activities record in the database 
-                self.cur.execute('''UPDATE Cron_Activities SET description=?, accepted=?, activity_id=?, co2_reduction=?
-                                    WHERE id=?''',
-                                 (self.description, self.accepted, self.activity_id, self.co2_reduction, self.id))
-            self.conn.commit()
+        if self.id is None:
+            # Inserts new cron_activities record into the database
+            result = self.db.register_cron_activity(self.description, self.accepted, self.activity_id, self.co2_reduction)
+            if result == 0:
+                self.id = self.cur.lastrowid
+        else:
+            # Updates existing cron_activities record in the database
+            result = self.db.update_cron_activity(self.id, self.description, self.accepted, self.activity_id, self.co2_reduction)
+        if result == 0:
             print(Fore.GREEN + 'Information saved correctly!\n' + Style.RESET_ALL)
-        except Exception as e: 
-            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL) #possiamo anche non stampare e??? boh
+        else:
+            print(Fore.RED + 'Error saving information!\n' + Style.RESET_ALL)
+        return result
 
     def delete(self):
         """
         Deletes a Cron_Activities record from the database based on its ID.
         """
         if self.id is not None:
-            try:
-                self.cur.execute('DELETE FROM Cron_Activities WHERE id=?', (self.id,))
-                self.conn.commit()
-                print(Fore.GREEN + 'Activities deleted successfully!\n' + Style.RESET_ALL)
-            except Exception as e:
-                print(Fore.RED + f'Error deleting activities: {e}' + Style.RESET_ALL)
+            result = self.db.delete_cron_activity(self.id)
+            if result == 0:
+                print(Fore.GREEN + 'Information deleted correctly!\n' + Style.RESET_ALL)
+            else:
+                print(Fore.RED + 'Error deleting information!\n' + Style.RESET_ALL)
+            return result
+        else:
+            return -1

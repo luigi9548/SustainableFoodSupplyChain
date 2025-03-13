@@ -1,4 +1,6 @@
 from models.model_base import Model
+from colorama import Fore, Style, init
+from db.db_operations import DatabaseOperations
 
 class Activities(Model):
     """
@@ -6,7 +8,7 @@ class Activities(Model):
     extending the functionality provided by the Model class.
     """
 
-    def __init__(self, id, type, description):
+    def __init__(self, id, type, description, db):
         """
         Initializes a new instance of the Activity class, representing a specific action or investment.
 
@@ -20,6 +22,7 @@ class Activities(Model):
         self.id = id
         self.type = type
         self.description = description
+        self.db = db
 
     # Getter methods for each attribute
     def get_id(self):
@@ -38,19 +41,28 @@ class Activities(Model):
         """
         if self.id is None:
             # Insert new activities record
-            self.cur.execute('''INSERT INTO Activities (type, description)
-                                VALUES (?, ?)''', #Question marks as placeholders are used to prevent SQL Injection attacks
-                             (self.type, self.description))
-            self.id = self.cur.lastrowid # Update the ID with the last row inserted ID if new record
+            result = self.db.register_activities(self.type, self.description)
+            if result == 0:
+                self.id = self.cur.lastrowid # Update the ID with the last row inserted ID if new record
         else:
             # Update existing activities record
-            self.cur.execute('''UPDATE Activities SET type=?, description=? WHERE id=?''',
-                                (self.type, self.description, self.id))     
-        self.conn.commit()
+            result = self.db.update_activities(self.id, self.type, self.description)
+        if result == 0:
+            print(Fore.GREEN + 'Information saved correctly!\n' + Style.RESET_ALL)
+        else:
+            print(Fore.RED + 'Error saving information!\n' + Style.RESET_ALL)
+        return result
 
     def delete(self):
         """
         Deletes an existing Activities record from the database.
         """
-        self.cur.execute('''DELETE FROM Activities WHERE id=?''', (self.id,))
-        self.conn.commit()
+        if self.id is not None:
+            result = self.db.delete_activities(self.id)
+            if result == 0:
+                print(Fore.GREEN + 'Information deleted correctly!\n' + Style.RESET_ALL)
+            else:
+                print(Fore.RED + 'Error deleting information!\n' + Style.RESET_ALL)
+            return result
+        else:
+            return -1

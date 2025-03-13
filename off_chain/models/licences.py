@@ -1,4 +1,6 @@
 from models.model_base import Model
+from colorama import Fore, Style, init
+from db.db_operations import DatabaseOperations
 
 class Licences(Model):
     """
@@ -6,7 +8,7 @@ class Licences(Model):
     extending the functionality provided by the Model class.
     """
 
-    def __init__(self, id, type, licence_number):
+    def __init__(self, id, type, licence_number, db):
         """
         Initializes a new instance of the Licence class, associating a licence ID with an account type.
 
@@ -19,6 +21,7 @@ class Licences(Model):
         self.id = id
         self.type = type
         self.licence_number = licence_number
+        self.db = db
 
     # Getter method for each attribute
     def get_id(self):
@@ -37,22 +40,31 @@ class Licences(Model):
         """
         if self.id is None:
             # Insert new licences record
-            self.cur.execute('''INSERT INTO Licences (type, licence_number) 
-                                VALUES (?, ?)''', #Question marks as placeholders are used to prevent SQL Injection attacks
-                             (self.type, self.licence_number))
-            self.id = self.cur.lastrowid # Update the ID with the last row inserted ID if new record
+            result = self.db.register_licences(self.type, self.licence_number)
+            if result == 0:
+                self.id = self.cur.lastrowid
         else:
             # Update existing licences record
-            self.cur.execute('''UPDATE Licences SET type=?, licence_number=? 
-                                WHERE id=?''', 
-                             (self.type, self.licence_number, self.id))
-        self.conn.commit()
+            result = self.db.update_licences(self.id, self.type,
+                                             self.licence_number)
+        if result == 0:
+            print(Fore.GREEN + 'Information saved correctly!\n' + Style.RESET_ALL)
+        else:
+            print(Fore.RED + 'Error saving information!\n' + Style.RESET_ALL)
+        return result
 
     def delete(self):
         """
         Deletes a Lincences record from the database based on its ID.
         """
         if self.id is not None:
-            self.cur.execute('DELETE FROM Licences WHERE id=?', (self.id,))
-            self.conn.commit()
-
+            result = self.db.delete_licences(self.id)
+            if result == 0:
+                print(Fore.GREEN + 'Information deleted correctly!\n' +
+                      Style.RESET_ALL)
+            else:
+                print(Fore.RED + 'Error deleting information!\n' +
+                      Style.RESET_ALL)
+            return result
+        else:
+            return -1
