@@ -34,6 +34,82 @@ class DatabaseOperations:
         except sqlite3.IntegrityError as e:
             print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL) #possiamo anche non stampare e??? boh -> rientra nella mitigazione del misuso secondo me stamperei
             return -1
+        
+    def update_creds(self, id, username=None, password=None, role=None, public_key=None, private_key=None, temp_code=None, temp_code_validity=None):
+        """
+        Updates an existing credentials record in the database.
+        Only updates fields that are provided (non-None).
+        """
+        try:
+            query = "UPDATE Credentials SET "
+            params = []
+            
+            if username:
+                query += "username = ?, "
+                params.append(username)
+            
+            if password:
+                hashed_passwd = self.hash_function(password)
+                query += "password = ?, "
+                params.append(hashed_passwd)
+            
+            if role:
+                query += "role = ?, "
+                params.append(role)
+            
+            if public_key:
+                query += "public_key = ?, "
+                params.append(public_key)
+            
+            if private_key:
+                obfuscated_private_k = self.encrypt_private_k(private_key, password if password else self.get_current_password(id))
+                query += "private_key = ?, "
+                params.append(obfuscated_private_k)
+            
+            if temp_code is not None:
+                query += "temp_code = ?, "
+                params.append(temp_code)
+            
+            if temp_code_validity is not None:
+                query += "temp_code_validity = ?, "
+                params.append(temp_code_validity)
+            
+            # Remove trailing comma and space
+            query = query.rstrip(", ") + " WHERE id = ?"
+            params.append(id)
+            
+            self.cur.execute(query, params)
+            self.conn.commit()
+            
+            if self.cur.rowcount > 0:
+                print(Fore.GREEN + "Information updated correctly!\n" + Style.RESET_ALL)
+                return 0
+            else:
+                print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
+                return -1
+
+        except sqlite3.Error as e:
+            print(Fore.RED + f'Error updating credentials: {e}' + Style.RESET_ALL)
+            return -1
+
+    def delete_creds(self, id):
+        """
+        Deletes a credentials record from the database based on its ID.
+        """
+        try:
+            self.cur.execute("DELETE FROM Credentials WHERE id = ?", (id,))
+            self.conn.commit()
+            
+            if self.cur.rowcount > 0:
+                print(Fore.GREEN + "Information deleted correctly!\n" + Style.RESET_ALL)
+                return 0
+            else:
+                print(Fore.YELLOW + "No record found with the given ID.\n" + Style.RESET_ALL)
+                return -1
+
+        except sqlite3.Error as e:
+            print(Fore.RED + f'Error deleting credentials: {e}' + Style.RESET_ALL)
+            return -1
 
     def check_username(self, username):
         self.cur.execute("SELECT COUNT(*) FROM Credentials WHERE username = ?", (username,))
@@ -46,6 +122,79 @@ class DatabaseOperations:
         """
         self.cur.execute("SELECT COUNT(*) FROM Licences WHERE type = ? AND licence_number = ?", (role, licence_number))
         return self.cur.fetchone()[0] > 0
+    
+    def register_licences(self, type, licence_number):
+        """
+        Registers a new licence in the database.
+        """
+        try:
+            self.cur.execute("""
+                INSERT INTO Licences (type, licence_number)
+                VALUES (?, ?)""",
+                (type, licence_number)
+            )
+            self.conn.commit()
+            return 0  # Success
+        except sqlite3.IntegrityError as e:
+            print(Fore.RED + f'Error inserting licence: {e}' + Style.RESET_ALL)
+            return -1  # Error
+
+    def update_licences(self, id, type=None, licence_number=None):
+        """
+        Updates an existing licence record.
+        Only updates fields that are provided (non-None).
+        """
+        try:
+            query = "UPDATE Licences SET "
+            params = []
+            
+            if type is not None:
+                query += "type = ?, "
+                params.append(type)
+            
+            if licence_number is not None:
+                query += "licence_number = ?, "
+                params.append(licence_number)
+
+            # Always update the timestamp
+            query += "update_datetime = CURRENT_TIMESTAMP, "
+
+            # Remove the last comma
+            query = query.rstrip(", ") + " WHERE id = ?"
+            params.append(id)
+
+            self.cur.execute(query, params)
+            self.conn.commit()
+
+            if self.cur.rowcount > 0:
+                print(Fore.GREEN + "Licence updated successfully!\n" + Style.RESET_ALL)
+                return 0
+            else:
+                print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
+                return -1
+
+        except sqlite3.Error as e:
+            print(Fore.RED + f'Error updating licence: {e}' + Style.RESET_ALL)
+            return -1
+
+    def delete_licences(self, id):
+        """
+        Deletes a licence record from the database based on its ID.
+        """
+        try:
+            self.cur.execute("DELETE FROM Licences WHERE id = ?", (id,))
+            self.conn.commit()
+
+            if self.cur.rowcount > 0:
+                print(Fore.GREEN + "Licence deleted successfully!\n" + Style.RESET_ALL)
+                return 0
+            else:
+                print(Fore.YELLOW + "No record found with the given ID.\n" + Style.RESET_ALL)
+                return -1
+
+        except sqlite3.Error as e:
+            print(Fore.RED + f'Error deleting licence: {e}' + Style.RESET_ALL)
+            return -1
 
     def get_credentials(self):
         self.cur.execute("SELECT * FROM Credentials")
@@ -71,42 +220,203 @@ class DatabaseOperations:
         self.cur.execute("SELECT * FROM Products")
         return self.cur.fetchall()
 
-    def insert_account(self, credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id):
+    def register_account(self, credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id):
+        """
+        Inserts a new account record into the database.
+        """
         try:
             self.cur.execute("""
-                INSERT INTO Accounts (credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id))
+            INSERT INTO Accounts (credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id))
             self.conn.commit()
             return 0
         except sqlite3.IntegrityError:
             return -1
 
-    def insert_activity(self, type, description):
-        try:
-            self.cur.execute("INSERT INTO Activities (type, description) VALUES (?, ?)", (type, description))
-            self.conn.commit()
-            return 0
-        except sqlite3.IntegrityError:
-            return -1
-
-    def assign_activity_to_account(self, account_id, activity_id):
-        try:
-            self.cur.execute("INSERT INTO Accounts_Activities (account_id, activity_id) VALUES (?, ?)", (account_id, activity_id))
-            self.conn.commit()
-            return 0
-        except sqlite3.IntegrityError:
-            return -1
-
-    def insert_cron_activity(self, description, credential_id, accepted, activity_id, co2_reduction):
+    def update_account(self, credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail, id):
+        """
+        Updates an existing account record in the database.
+        """
         try:
             self.cur.execute("""
-                INSERT INTO Cron_Activities (description, credential_id, accepted, activity_id, co2_reduction, creation_datetime)
-                VALUES (?, ?, ?, ?, ?, ?)""",
-                (description, credential_id, accepted, activity_id, co2_reduction, self.today_date))
+            UPDATE Accounts 
+            SET credential_id = ?, type = ?, name = ?, licence_id = ?, lastname = ?, birthday = ?, 
+                birth_place = ?, residence = ?, phone = ?, mail = ? 
+            WHERE id = ?""",
+            (credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail, id))
+            self.conn.commit()
+            return 0
+        except sqlite3.Error:
+            return -1
+
+    def delete_account(self, id):
+        """
+        Deletes an account record from the database.
+        """
+        try:
+           self.cur.execute("DELETE FROM Accounts WHERE id = ?", (id,))
+           self.conn.commit()
+           return 0
+        except sqlite3.Error:
+           return -1
+
+    def register_account_activities(self, account_id, activity_id):
+        """
+          Inserts a new account-activity association.
+        """
+        try:
+          self.cur.execute("INSERT INTO Accounts_Activities (account_id, activity_id) VALUES (?, ?)", 
+                         (account_id, activity_id))
+          self.conn.commit()
+          return 0
+        except sqlite3.IntegrityError:
+          return -1
+        
+    
+    def update_account_activities(self, record_id, account_id, activity_id):
+        """
+        Updates an existing account-activity association.
+        """
+        try:
+            self.cur.execute("UPDATE Accounts_Activities SET account_id = ?, activity_id = ? WHERE id = ?", 
+                         (account_id, activity_id, record_id))
             self.conn.commit()
             return 0
         except sqlite3.IntegrityError:
+            return -1
+        
+    def delete_account_activities(self, record_id):
+        """
+        Deletes an account-activity association.
+        """
+        try:
+            self.cur.execute("DELETE FROM Accounts_Activities WHERE id = ?", (record_id,))
+            self.conn.commit()
+            return 0
+        except sqlite3.IntegrityError:
+            return -1
+
+    def register_activities(self, type, description):
+        """
+        Inserts a new activity record into the database.
+        """
+        try:
+           self.cur.execute("""
+            INSERT INTO Activities (type, description) 
+            VALUES (?, ?)""", 
+            (type, description))
+           self.conn.commit()
+           return 0
+        except sqlite3.IntegrityError:
+           return -1
+
+    def update_activities(self, id, type, description):
+        """
+         Updates an existing activity record in the database.
+        """
+        try:
+           self.cur.execute("""
+            UPDATE Activities 
+            SET type = ?, description = ? 
+            WHERE id = ?""",
+            (type, description, id))
+           self.conn.commit()
+           return 0
+        except sqlite3.Error:
+           return -1
+
+    def delete_activities(self, id):
+        """
+        Deletes an activity record from the database.
+        """
+        try:
+           self.cur.execute("DELETE FROM Activities WHERE id = ?", (id,))
+           self.conn.commit()
+           return 0
+        except sqlite3.Error:
+           return -1
+   
+
+    def register_cron_activity(self, description, accepted, activity_id, co2_reduction):
+        """
+        Registers a new cron activity in the database.
+        """
+        try:
+            self.cur.execute("""
+                INSERT INTO Cron_Activities (description, accepted, activity_id, co2_reduction, update_datetime, creation_datetime)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)""",
+                (description, accepted, activity_id, co2_reduction)
+            )
+            self.conn.commit()
+            return 0  # Success
+        except sqlite3.IntegrityError as e:
+            print(Fore.RED + f'Error inserting cron activity: {e}' + Style.RESET_ALL)
+            return -1  # Error
+
+    def update_cron_activity(self, id, description=None, accepted=None, activity_id=None, co2_reduction=None):
+        """
+        Updates an existing cron activity record.
+        Only updates fields that are provided (non-None).
+        """
+        try:
+            query = "UPDATE Cron_Activities SET "
+            params = []
+            
+            if description is not None:
+                query += "description = ?, "
+                params.append(description)
+            
+            if accepted is not None:
+                query += "accepted = ?, "
+                params.append(accepted)
+            
+            if activity_id is not None:
+                query += "activity_id = ?, "
+                params.append(activity_id)
+            
+            if co2_reduction is not None:
+                query += "co2_reduction = ?, "
+                params.append(co2_reduction)
+
+            # Always update the timestamp
+            query += "update_datetime = CURRENT_TIMESTAMP, "
+
+            # Remove the last comma
+            query = query.rstrip(", ") + " WHERE id = ?"
+            params.append(id)
+
+            self.cur.execute(query, params)
+            self.conn.commit()
+
+            if self.cur.rowcount > 0:
+                print(Fore.GREEN + "Cron activity updated successfully!\n" + Style.RESET_ALL)
+                return 0
+            else:
+                print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
+                return -1
+
+        except sqlite3.Error as e:
+            print(Fore.RED + f'Error updating cron activity: {e}' + Style.RESET_ALL)
+            return -1
+
+    def delete_cron_activity(self, id):
+        """
+        Deletes a cron activity record from the database based on its ID.
+        """
+        try:
+            self.cur.execute("DELETE FROM Cron_Activities WHERE id = ?", (id,))
+            self.conn.commit()
+
+            if self.cur.rowcount > 0:
+                print(Fore.GREEN + "Cron activity deleted successfully!\n" + Style.RESET_ALL)
+                return 0
+            else:
+                print(Fore.YELLOW + "No record found with the given ID.\n" + Style.RESET_ALL)
+                return -1
+
+        except sqlite3.Error as e:
+            print(Fore.RED + f'Error deleting cron activity: {e}' + Style.RESET_ALL)
             return -1
 
     def insert_product(self, name, category, co2Emission, sensorId):
