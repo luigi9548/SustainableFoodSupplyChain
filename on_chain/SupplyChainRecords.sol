@@ -1,5 +1,5 @@
-﻿// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 //Documentation for this contract written in NatSpec format
 /**
@@ -8,10 +8,10 @@ pragma solidity ^0.8.0;
  * @notice This contract is intended for demonstration purposes and not for production use.
  */
 
- contract HealthCareRecords {
+ contract SuuplyChainRecords {
 
     // Declaration of carbon credit
-    ICarbonCreditToken public carbonCreditToken;
+    //ICarbonCreditToken public carbonCreditToken;
 
 	 // Structs for every type of user
 	struct Certifier {
@@ -59,7 +59,7 @@ pragma solidity ^0.8.0;
     mapping(address  => Producer) public producers;
     mapping(address  => Carrier) public carriers;
     mapping(address => Farmer) public farmers;
-    mapping(uint256 => FoodProductNFT) public foodproductsNFT;
+    mapping(address => Seller) public sellers;
     mapping(uint256 => ActionLog) public actionLogs;
     mapping(address => bool) public authorizedEditors;
     address public owner;
@@ -72,8 +72,8 @@ pragma solidity ^0.8.0;
     /**
      * @dev Inizialize carbon credit, sets the contract owner as the deployer and initializes authorized editors.
      */
-    constructor((address _carbonCreditToken) {
-        carbonCreditToken = ICarbonCreditToken(_carbonCreditToken);
+    constructor(/*address _carbonCreditToken*/) {
+        //carbonCreditToken = ICarbonCreditToken(_carbonCreditToken);
         owner = msg.sender;
         authorizedEditors[owner] = true;
     }
@@ -119,14 +119,14 @@ pragma solidity ^0.8.0;
     /**
      * @dev Add a new certifier record to the system.
      * @param name First name of the certifier.
-     * @param lastname Last name of the certifier.
+     * @param lastName Last name of the certifier.
      * @notice Only authorized users can add certifier records.
      */
-    function addCertificator(string memory name, string memory lastnam) public onlyAuthorized {
-        require(!patients[msg.sender].isRegistered, "Certifier already registered");
+    function addCertificator(string memory name, string memory lastName) public onlyAuthorized {
+        require(!certifiers[msg.sender].isRegistered, "Certifier already registered");
         Certifier storage certifier = certifiers[msg.sender];
         certifier.name = name;
-        certifier.lastName = lastname;
+        certifier.lastName = lastName;
         certifier.isRegistered = true;
         logAction("Create", msg.sender, "Certifier added");
         emit EntityRegistered("Certifier", msg.sender);
@@ -135,15 +135,14 @@ pragma solidity ^0.8.0;
     /**
      * @dev Updates existing certifier information.
      * @param name Updated first name of the certifier.
-     * @param lastname Updated last name of the certifier.
-     * @param autonomous Updated level of autonomy of the certifier.
+     * @param lastName Updated last name of the certifier.
      * @notice Only authorized users can update certifier records.
      */
-    function updateCertifier(string memory name, string memory lastname) public onlyAuthorized {
-        require(certifier[msg.sender].isRegistered, "Certifier not found");
+    function updateCertifier(string memory name, string memory lastName) public onlyAuthorized {
+        require(certifiers[msg.sender].isRegistered, "Certifier not found");
         Certifier storage certifier = certifiers[msg.sender];
         certifier.name = name;
-        certifier.lastName = lastname;
+        certifier.lastName = lastName;
         logAction("Update", msg.sender, "Certifier updated");
         emit EntityUpdated("Certifier", msg.sender);
     }
@@ -151,7 +150,7 @@ pragma solidity ^0.8.0;
     /**
      * @dev Add a new farmer record to the system.
      * @param name First name of the farmer.
-     * @param lastname Last name of the farmer.
+     * @param lastName Last name of the farmer.
      * @notice Only authorized users can add farmer records.
      */
     function addFarmer(string memory name, string memory lastName) public onlyAuthorized {
@@ -167,7 +166,7 @@ pragma solidity ^0.8.0;
     /**
      * @dev Updates existing certifier information.
      * @param name Updated first name of the certifier.
-     * @param lastname Updated last name of the certifier.
+     * @param lastName Updated last name of the certifier.
      * @notice Only authorized users can update certifier records.
      */
     function updateFarmer(string memory name, string memory lastName) public onlyAuthorized {
@@ -182,7 +181,7 @@ pragma solidity ^0.8.0;
     /**
      * @dev Add a new carrier record to the system.
      * @param name First name of the carrier.
-     * @param lastname Last name of the carrier.
+     * @param lastName Last name of the carrier.
      * @notice Only authorized users can add carrier records.
      */
     function addCarrier(string memory name, string memory lastName) public onlyAuthorized {
@@ -198,7 +197,7 @@ pragma solidity ^0.8.0;
     /**
      * @dev Updates existing carrier information.
      * @param name Updated first name of the carrier.
-     * @param lastname Updated last name of the carrier.
+     * @param lastName Updated last name of the carrier.
      * @notice Only authorized users can update carrier records.
      */
     function updateCarrier(string memory name, string memory lastName) public onlyAuthorized {
@@ -213,7 +212,7 @@ pragma solidity ^0.8.0;
     /**
      * @dev Add a new producer record to the system.
      * @param name First name of the producer.
-     * @param lastname Last name of the producer.
+     * @param lastName Last name of the producer.
      * @notice Only authorized users can add producer records.
      */
     function addProducer(string memory name, string memory lastName) public onlyAuthorized {
@@ -229,7 +228,7 @@ pragma solidity ^0.8.0;
     /**
      * @dev Updates existing producer information.
      * @param name Updated first name of the producer.
-     * @param lastname Updated last name of the producer.
+     * @param lastName Updated last name of the producer.
      * @notice Only authorized users can update producer records.
      */
     function updateProducer(string memory name, string memory lastName) public onlyAuthorized {
@@ -245,7 +244,7 @@ pragma solidity ^0.8.0;
     /**
      * @dev Add a new seller record to the system.
      * @param name First name of the seller.
-     * @param lastname Last name of the seller.
+     * @param lastName Last name of the seller.
      * @notice Only authorized users can add seller records.
      */
     function addSeller(string memory name, string memory lastName) public onlyAuthorized {
@@ -261,7 +260,7 @@ pragma solidity ^0.8.0;
     /**
      * @dev Updates existing seller information.
      * @param name Updated first name of the seller.
-     * @param lastname Updated last name of the seller.
+     * @param lastName Updated last name of the seller.
      * @notice Only authorized users can update seller records.
      */
     function updateSeller(string memory name, string memory lastName) public onlyAuthorized {

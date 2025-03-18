@@ -1,8 +1,9 @@
-﻿// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+
 
 /**
  * @title SupplyChainNFT
@@ -17,6 +18,7 @@ contract SupplyChainNFT is ERC721, Ownable {
      * @param name Name of the product associated with the NFT
      * @param category // Category of the product (e.g., fruit, meat, dairy)
      * @param co2Emission // CO₂ emissions in Kg
+     * @param qualityScore // Quality score of the product
      * @param harvestDate // Harvest or production date (Unix timestamp)
      * @param sensorId // ID of the sensor that recorded the data
      */
@@ -57,7 +59,7 @@ contract SupplyChainNFT is ERC721, Ownable {
     /**
      * @dev Constructor to initialize the ERC721 token
      */
-    constructor() ERC721("SupplyChainNFT", "SCNFT") {}
+    constructor() ERC721("SupplyChainNFT", "SCNFT") Ownable(msg.sender) {}
 
     /**
      * @notice Mints a new NFT and assigns it to a specified address
@@ -65,16 +67,20 @@ contract SupplyChainNFT is ERC721, Ownable {
      * @param to Address receiving the NFT
      * @param role Role of the receiver in the supply chain
      * @param name Name of the product
+     * @param category // Category of the product (e.g., fruit, meat, dairy)
      * @param emissions Carbon emissions of the product
+     * @param qualityScore // Quality score of the product
+     * @param harvestDate // Harvest or production date (Unix timestamp)
+     * @param sensorId // ID of the sensor that recorded the data
      */
-    function mint(address to, string memory role, string memory name, uint256 emissions) external onlyOwner {
+    function mint(address to, string memory role, string memory name, string memory category, uint256 emissions, uint256 qualityScore, uint256 harvestDate, uint256 sensorId) external onlyOwner {
         uint256 tokenId = nextTokenId++;
         _safeMint(to, tokenId);
-        nfts[tokenId] = NFT(tokenId, to, role, name, emissions);
+        nfts[tokenId] = NFT(tokenId, to, role, name, category, emissions, qualityScore, harvestDate, sensorId);
         userRoles[to] = role;
 
-        logAction("Mint", msg.sender, "New NFT minted")
-        NFTMint(to, role, name);
+        logAction("Mint", msg.sender, "New NFT minted");
+        emit NFTMint(to, role, name);
     }
 
     /**
@@ -94,7 +100,7 @@ contract SupplyChainNFT is ERC721, Ownable {
         nfts[tokenId].owner = to;
         nfts[tokenId].role = nextRole;
 
-        logAction("NFT transfer", msg.sender, "NFT transferred",);
+        logAction("NFT transfer", msg.sender, "NFT transferred");
         emit NFTTransferred(tokenId, msg.sender, to, nextRole);
     }
 
@@ -130,10 +136,10 @@ contract SupplyChainNFT is ERC721, Ownable {
      */
     function updateNFT(uint256 tokenId, uint256 emissions) external {
         require(ownerOf(tokenId) == msg.sender, "Not the owner of the NFT");
-        nfts[tokenId].emissions += emissions;
+        nfts[tokenId].co2Emission += emissions;
 
         logAction("Update ", msg.sender, " NFT transferred");
-        emit NFTUpdated(tokenId, name, emissions);
+        emit NFTUpdated(tokenId, nfts[tokenId].name, emissions);
     }
 
     /**

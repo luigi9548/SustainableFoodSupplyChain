@@ -14,19 +14,19 @@ class ActionController:
 
     init(convert=True)
 
-    def __init__(self, http_provider='http://ganache:8545'):
+    def __init__(self, http_provider='http://127.0.0.1:7545'):
         """
         Initialize the ActionController to interact with an Ethereum blockchain.
 
         Args:
             http_provider (str): The HTTP URL to connect to an Ethereum node.
         """
-        #http://ganache:8545
-        #http://127.0.0.1:8545
+        #http://ganache:7545
+        #http://127.0.0.1:7545
         self.http_provider = http_provider
         self.w3 = Web3(Web3.HTTPProvider(self.http_provider))
         assert self.w3.is_connected(), Fore.RED + "Failed to connect to Ethereum node." + Style.RESET_ALL
-        self.load_contract()
+        self.load_contracts()
 
     def load_contracts(self, contracts_directory="on_chain/"):
         """
@@ -37,6 +37,9 @@ class ActionController:
             contracts_directory (str): Directory where contract files are stored.
         """
         self.contracts = {}  # Dictionary to store uploaded contracts
+        address_path = ""
+        abi_path = ""
+        contract_name = ""
 
         try:
             for filename in os.listdir(contracts_directory):
@@ -87,14 +90,13 @@ class ActionController:
             controller = DeployController(self.http_provider)
 
             # Assicurati che la cartella on_chain esista
-            contracts_dir = os.path.join(os.path.dirname(__file__), "on_chain")
-            os.makedirs(contracts_dir, exist_ok=True)
+            contracts_dir = os.path.join(os.path.dirname(__file__), "../../on_chain")
 
             for contract_source_path in contract_source_paths:
-                contract_name = os.path.splitext(os.path.basename(contract_source_path))[0]  # Es: "HealthCareRecords"
+                contract_name = os.path.splitext(os.path.basename(contract_source_path))[0]  # Es: "SupplyChainRecords"
 
                 # Percorso completo del file Solidity
-                full_path = os.path.join(os.path.dirname(__file__), contract_source_path)
+                full_path = os.path.join(contracts_dir, contract_source_path)
 
                 # Compilazione e deploy
                 controller.compile_and_deploy(full_path)

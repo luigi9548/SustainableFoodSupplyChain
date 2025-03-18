@@ -1,28 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-/**
- * @title ICarbonCreditToken Interface
- * @dev This interface defines the functions for minting carbon credit tokens.
- */
-interface ICarbonCreditToken {
-    /**
-     * @notice Allows verified issuers to mint new carbon credits.
-     * @dev Only addresses marked as verified issuers can call this function.
-     * @param to The address receiving the newly minted carbon credits.
-     * @param amount The amount of carbon credits to mint.
-     */
-    function mint(address to, uint256 amount) external;
-}
+import "../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Carbon Credit Token
  * @dev ERC-20 token representing carbon credits that can be traded and burned for offsetting emissions.
  */
-contract CarbonCreditToken is ERC20, Ownable, ICarbonCreditToken {
+contract CarbonCreditToken is ERC20, Ownable{
     //Struct to log actions for every previous struct
     struct ActionLog {
         uint256 actionId;
@@ -35,17 +21,18 @@ contract CarbonCreditToken is ERC20, Ownable, ICarbonCreditToken {
     //State variables and mapping
     uint256 private actionCounter = 0;
     mapping(address => bool) public verifiedIssuers;
+    mapping(uint256 => ActionLog) public actionLogs;
 
     //Events for actions
     event CreditsMint(address to, uint256 amount);
     event CarbonCreditsBurned(address from, uint256 amount);
-    event CarbonCreditsTransferred(adress from, uint256 amount);
+    event CarbonCreditsTransferred(address from, uint256 amount);
     event ActionLogged(uint256 indexed actionId, string actionType, address indexed initiator, uint256 indexed timestamp, string details);
 
     /**
      * @dev Initializes the Carbon Credit Token contract.
      */
-    constructor() ERC20("Carbon Credit Token", "CCT") {}
+    constructor() ERC20("Carbon Credit Token", "CCT") Ownable(msg.sender){}
 
     /**
      * @notice Allows verified issuers to mint new carbon credits.
@@ -81,7 +68,7 @@ contract CarbonCreditToken is ERC20, Ownable, ICarbonCreditToken {
     function transferCredits(address to, uint256 amount) external {
         require(to != address(0), "Invalid recipient address");
         require(balanceOf(msg.sender) >= amount, "Insufficient balance");
-        logAction("Transfer", msg.sender, "Carbon credits transferred")
+        logAction("Transfer", msg.sender, "Carbon credits transferred");
         _transfer(msg.sender, to, amount);
     }
 

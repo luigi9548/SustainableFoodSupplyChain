@@ -8,6 +8,7 @@ truffle-config.js
 *.vs
 *.venv
 accounts.txt
-*contract_address.txt
+*_address.txt
 *.log
+action_logs.txt
 *.pytest_cache

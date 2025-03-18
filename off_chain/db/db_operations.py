@@ -14,7 +14,7 @@ class DatabaseOperations:
     init(convert=True)
 
     def __init__(self):
-        self.conn = sqlite3.connect(config["db_path"])
+        self.conn = sqlite3.connect(config.config["db_path"])
         self.cur = self.conn.cursor()
         self.today_date = datetime.date.today().strftime('%Y-%m-%d')
 
