@@ -112,6 +112,8 @@ class ActionController:
                 with open(abi_path, 'w') as file:
                     json.dump(contract.abi, file)
 
+                self.load_contracts()
+
                 log_msg(f"Contract '{contract_name}' deployed at {contract.address} and initialized.")
 
         except Exception as e:

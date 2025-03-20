@@ -26,11 +26,17 @@ cur.execute('''CREATE TABLE Credentials (
             private_key TEXT NOT NULL,
             temp_code TEXT,
             temp_code_validity DATETIME,
-            publicKey TEXT NOT NULL,
-            privateKey TEXT NOT NULL,
-            update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             );''')
+
+# trigger for automatic update of update_datetime
+cur.execute('''CREATE TRIGGER update_Credentials_timestamp
+            AFTER UPDATE ON Credentials
+            FOR EACH ROW
+            BEGIN
+            UPDATE Credentials SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
+            END;''')
 
 # licence it's mandatory for each actor
 cur.execute('''CREATE TABLE Accounts (
@@ -77,7 +83,7 @@ cur.execute('''CREATE TABLE Cron_Activities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             description TEXT NOT NULL,
             credential_id INTEGER NOT NULL,
-            update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             accepted BOOLEAN NOT NULL,
             activity_id INTEGER NOT NULL,
@@ -86,12 +92,19 @@ cur.execute('''CREATE TABLE Cron_Activities (
             FOREIGN KEY (activity_id) REFERENCES Activities(id)
             );''')
 
+cur.execute('''CREATE TRIGGER update_Cron_Activities_timestamp
+            AFTER UPDATE ON Cron_Activities
+            FOR EACH ROW
+            BEGIN
+            UPDATE Cron_Activities SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
+            END;''')
+
 cur.execute('''CREATE TABLE Products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            category TEXT CHECK(role IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
+            category TEXT CHECK(category IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
             co2Emission INTEGER NOT NULL,
-            harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             sensorId INTEGER NOT NULL
             );''')
 

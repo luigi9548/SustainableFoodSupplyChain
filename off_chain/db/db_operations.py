@@ -17,7 +17,7 @@ class DatabaseOperations:
     def __init__(self):
         self.conn = sqlite3.connect(config.config["db_path"])
         self.cur = self.conn.cursor()
-      #  self._create_new_table()
+        self._create_new_table()
         self.today_date = datetime.date.today().strftime('%Y-%m-%d')
 
     # Metodo da eliminare, utilizzato temporaneamente per debugging
@@ -26,23 +26,37 @@ class DatabaseOperations:
         Creates necessary tables in the database if they are not already present.
         This ensures that the database schema is prepared before any operations are performed.
         """
-        self.cur.execute('''CREATE TABLE Credentials (
+        self.cur.execute("DROP TABLE IF EXISTS Credentials")
+        self.cur.execute("DROP TABLE IF EXISTS Accounts")
+        self.cur.execute("DROP TABLE IF EXISTS Activities")
+        self.cur.execute("DROP TABLE IF EXISTS Accounts_Activities")
+        self.cur.execute("DROP TABLE IF EXISTS Cron_Activities")
+        self.cur.execute("DROP TABLE IF EXISTS Licences")
+        self.cur.execute("DROP TABLE IF EXISTS Products")
+
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS Credentials (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         username TEXT NOT NULL,
                         password TEXT NOT NULL,
-                        role TEXT CHECK(role IN ('USER_CERTIFIER', 'USER_ACTOR', 'ADMIN')) NOT NULL,
+                        role TEXT CHECK(role IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
                         public_key TEXT NOT NULL,
                         private_key TEXT NOT NULL,
                         temp_code TEXT,
                         temp_code_validity DATETIME,
-                        publicKey TEXT NOT NULL,
-                        privateKey TEXT NOT NULL,
-                        update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
                         );''')
 
+        # trigger for automatic update of update_datetime
+        self.cur.execute('''CREATE TRIGGER IF NOT EXISTS update_Credentials_timestamp
+                        AFTER UPDATE ON Credentials
+                        FOR EACH ROW
+                        BEGIN
+                        UPDATE Credentials SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                        END;''')
+
         # licence it's mandatory for each actor
-        self.cur.execute('''CREATE TABLE Accounts (
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS Accounts (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         credential_id INTEGER NOT NULL,
                         type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
@@ -59,21 +73,21 @@ class DatabaseOperations:
                         );''')
 
         # Licences table to verufy the authenticity of role and mitigate misuese (aggiorno io le tabelle sul misuso, in fase di inserimento utente verifichiamo al sua licenza)
-        self.cur.execute('''CREATE TABLE Licences (
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS Licences (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
                     licence_number TEXT NOT NULL UNIQUE
                     );''')
 
 
-        self.cur.execute('''CREATE TABLE Activities (
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS Activities (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         type TEXT CHECK(type IN ('investment in a project for reduction', 'performing an action')) NOT NULL,
                         description TEXT NOT NULL
                         );''')
 
 
-        self.cur.execute('''CREATE TABLE Accounts_Activities (
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS Accounts_Activities (
                         account_id INTEGER NOT NULL,
                         activity_id INTEGER NOT NULL,
                         PRIMARY KEY (account_id, activity_id),
@@ -82,11 +96,11 @@ class DatabaseOperations:
                         );''')
 
 
-        self.cur.execute('''CREATE TABLE Cron_Activities (
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS Cron_Activities (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         description TEXT NOT NULL,
                         credential_id INTEGER NOT NULL,
-                        update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         accepted BOOLEAN NOT NULL,
                         activity_id INTEGER NOT NULL,
@@ -95,12 +109,20 @@ class DatabaseOperations:
                         FOREIGN KEY (activity_id) REFERENCES Activities(id)
                         );''')
 
-        self.cur.execute('''CREATE TABLE Products (
+        # trigger for automatic update of update_datetime
+        self.cur.execute('''CREATE TRIGGER IF NOT EXISTS update_Cron_Activities_timestamp
+                        AFTER UPDATE ON Cron_Activities
+                        FOR EACH ROW
+                        BEGIN
+                        UPDATE Cron_Activities SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                        END;''')
+
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS Products (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT NOT NULL,
-                        category TEXT CHECK(role IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
+                        category TEXT CHECK(category IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
                         co2Emission INTEGER NOT NULL,
-                        harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         sensorId INTEGER NOT NULL
                         );''')
         self.conn.commit()
@@ -246,7 +268,44 @@ class DatabaseOperations:
     def check_username(self, username):
         self.cur.execute("SELECT COUNT(*) FROM Credentials WHERE username = ?", (username,))
         return -1 if self.cur.fetchone()[0] > 0 else 0
-    
+
+    def check_unique_email(self, mail):
+        """
+        Checks if an email address is unique within the Accounts table in the database.
+
+        Args:
+            mail (str): The email address to check for uniqueness.
+
+        Returns:
+            int: 0 if the email address is not found in the Accounts records (unique), -1 if it is found (not unique).
+        """
+        query_accounts = "SELECT COUNT(*) FROM Accounts WHERE mail = ?"
+        self.cur.execute(query_accounts, (mail,))
+        count_accounts = self.cur.fetchone()[0]
+
+        if count_accounts == 0:
+            return 0 
+        else:
+            return -1
+
+    def check_unique_phone_number(self, phone):
+        """
+        Checks if a phone number is unique within the Accounts table in the database.
+
+        Args:
+            phone (str): The phone number to check for uniqueness.
+
+        Returns:
+            int: 0 if the phone number is not found in any records (unique), -1 if it is found (not unique).
+        """
+        query_accounts = "SELECT COUNT(*) FROM Accounts WHERE phone = ?"
+        self.cur.execute(query_accounts, (phone,))
+        count_accounts = self.cur.fetchone()[0]
+
+        if count_accounts == 0:
+            return 0 
+        else:
+            return -1    
 
     def check_valid_licence(self, role, licence_number):
         """
