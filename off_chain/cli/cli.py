@@ -1,8 +1,8 @@
 import getpass
 import re
-from eth_utils import decode_hex
-from eth_keys import keys
-#from controllers.controller import Controller
+from eth_utils import *
+from eth_keys import *
+from controllers.controller import Controller
 from controllers.action_controller import ActionController
 from session.session import Session
 from db.db_operations import DatabaseOperations
@@ -20,7 +20,7 @@ class CommandLineInterface:
 
     def __init__(self, session: Session):
         """Initialize CLI with a session and controllers."""
-        #self.controller = Controller(session)
+        self.controller = Controller(session)
         self.act_controller = ActionController()
         self.session = session
         self.ops = DatabaseOperations()
@@ -61,10 +61,10 @@ class CommandLineInterface:
                 print('Esci!')
                 exit()
             else:
-                print(Fore.RED + 'Scelta sbagliata inserisci una scelta valida!' + Style.RESET_ALL)
+                print(Fore.RED + 'Wrong choice, insert a valid choise!' + Style.RESET_ALL)
 
         except ValueError:
-            print(Fore.RED + 'Input non corretto, inserisci un numero!\n' + Style.RESET_ALL)
+            print(Fore.RED + 'Incorrect input, insert a number!\n' + Style.RESET_ALL)
 
     def registration_menu(self):
         """
@@ -129,30 +129,44 @@ class CommandLineInterface:
                 else: print(Fore.RED + 'Your username has been taken.\n' + Style.RESET_ALL)
 
             while True:
-                role = input("Insert your role: \n (C) if caregiver \n (M) if medic\n (P) if patient \n Your choice: ").strip().upper()
-                if role == 'M':
-                    user_role = 'MEDIC'
-                    confirm = input("Do you confirm you're a Medic? (Y/n): ").strip().upper()
+                role = input("Insert your role: \n (C) if certifier \n (F) if farmer \n (R) if carrier \n (S) if seller \n (P) if producer\n Your choice: ").strip().upper()
+                if role == 'C':
+                    user_role = 'CERTIFIER'
+                    confirm = input("Do you confirm you're a certifier? (Y/n): ").strip().upper()
+                    if confirm == 'Y':
+                        break
+                    else:
+                        print(Fore.RED + "Role not confirmed. Retry\n" + Style.RESET_ALL)
+                elif role == 'F':
+                    user_role = 'FARMER'
+                    confirm = input("Do you confirm you're a farmer? (Y/n): ").strip().upper()
+                    if confirm == 'Y':
+                        break
+                    else:
+                        print(Fore.RED + "Role not confirmed. Retry\n" + Style.RESET_ALL)
+                elif role == 'R':
+                    user_role = 'CARRIER'
+                    confirm = input("Do you confirm you're a carrier? (Y/n): ").strip().upper()
+                    if confirm == 'Y':
+                        break
+                    else:
+                        print(Fore.RED + "Role not confirmed. Retry\n" + Style.RESET_ALL)
+                elif role == 'S':
+                    user_role = 'SELLER'
+                    confirm = input("Do you confirm you're a seller? (Y/n): ").strip().upper()
                     if confirm == 'Y':
                         break
                     else:
                         print(Fore.RED + "Role not confirmed. Retry\n" + Style.RESET_ALL)
                 elif role == 'P':
-                    user_role = 'PATIENT'
-                    confirm = input("Do you confirm you're a Patient? (Y/n): ").strip().upper()
-                    if confirm == 'Y':
-                        break
-                    else:
-                        print(Fore.RED + "Role not confirmed. Retry\n" + Style.RESET_ALL)
-                elif role == 'C':
-                    user_role = 'CAREGIVER'
-                    confirm = input("Do you confirm you're a Caregiver? (Y/n): ").strip().upper()
+                    user_role = 'PRODUCER'
+                    confirm = input("Do you confirm you're a producer? (Y/n): ").strip().upper()
                     if confirm == 'Y':
                         break
                     else:
                         print(Fore.RED + "Role not confirmed. Retry\n" + Style.RESET_ALL)
                 else:
-                    print(Fore.RED + "You have to select a role between Caregiver (C), Medic (M) or Patient (P). Retry\n" + Style.RESET_ALL)
+                    print(Fore.RED + "You have to select a role between (C) certifier, (F) farmer, (R) carrier, (S) seller, (P) producer. Retry\n" + Style.RESET_ALL)
         
             while True:
                 while True:
@@ -172,18 +186,80 @@ class CommandLineInterface:
             reg_code = self.controller.registration(username, password, user_role, public_key, private_key)
             if reg_code == 0:
                 print(Fore.GREEN + 'You have succesfully registered!\n' + Style.RESET_ALL)
-                if role == 'P':
-                    self.insert_patient_info(username)
-                elif role == 'M':
-                    self.insert_medic_info(username)
-                elif role == 'C':
-                    self.insert_caregiver_info(username)
+                if role == 'C':
+                    self.insert_actor_info(username, 'CERTFIER')
+                elif role == 'F':
+                    self.insert_actor_info(username, 'FARMER')
+                elif role == 'R':
+                    self.insert_actor_info(username, 'CARRIER')
+                elif role == 'S':
+                    self.insert_actor_info(username, 'SELLER')
+                elif role == 'P':
+                    self.insert_actor_info(username, 'PRODUCER')
             elif reg_code == -1:
                 print(Fore.RED + 'Your username has been taken.\n' + Style.RESET_ALL)
         
         else:
             print(Fore.RED + 'Sorry, but the provided public and private key do not match to any account\n' + Style.RESET_ALL)
             return 
+
+    def insert_actor_info(self, username, role):
+        """
+        This method assists actors in providing their personal information. It validates 
+        user inputs and ensures data integrity before inserting the information into 
+        the system. Additionally, it registers the actor entity on the blockchain.
+
+        Args:
+            username (str): The username of the actor.
+            role (str): The role of the actor.
+        """
+
+        print("\nProceed with the insertion of a few personal information.")
+        while True:
+            name = input('Name: ')
+            if self.controller.check_null_info(name): break
+            else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
+        while True:
+            lastname = input('Lastname: ')
+            if self.controller.check_null_info(lastname): break
+            else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
+        while True:
+            actorLicense = input('License: ') #TODO aggiungere opportuni controlli sulla licenza
+            if self.controller.check_null_info(actorLicense): break
+            else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
+        while True:
+            residence = input('Residence: ')
+            if self.controller.check_null_info(residence): break
+            else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
+        while True:
+            birthdayPlace = input('Birthday place: ')
+            if self.controller.check_null_info(birthdayPlace): break
+            else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
+        while True:
+            birthday = input('Date of birth (YYYY-MM-DD): ')
+            if self.controller.check_birthdate_format(birthday): break
+            else: print(Fore.RED + "Invalid birthdate or incorrect format." + Style.RESET_ALL)
+        while True:
+            mail = input('E-mail: ')
+            if self.controller.check_email_format(mail): 
+                if self.controller.check_unique_email(mail) == 0: break
+                else: print(Fore.RED + "This e-mail has already been inserted. \n" + Style.RESET_ALL)
+            else: print(Fore.RED + "Invalid e-mail format.\n" + Style.RESET_ALL)
+        while True:
+            phone = input('Phone number: ')
+            if self.controller.check_phone_number_format(phone): 
+                if self.controller.check_unique_phone_number(phone) == 0: break
+                else: print(Fore.RED + "This phone number has already been inserted. \n" + Style.RESET_ALL)
+            else: print(Fore.RED + "Invalid phone number format.\n" + Style.RESET_ALL)
+
+        from_address_actor = self.controller.get_public_key_by_username(username)
+        self.act_controller.register_entity(role, name, lastname, from_address=from_address_actor)
+        insert_code = self.controller.insert_medic_info(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
+        if insert_code == 0:
+            print(Fore.GREEN + 'Information saved correctly!' + Style.RESET_ALL)
+            self.medic_menu(username)
+        elif insert_code == -1:
+            print(Fore.RED + 'Internal error!' + Style.RESET_ALL)
     
 
 

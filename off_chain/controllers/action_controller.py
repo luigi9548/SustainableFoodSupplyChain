@@ -14,15 +14,15 @@ class ActionController:
 
     init(convert=True)
 
-    def __init__(self, http_provider='http://127.0.0.1:7545'):
+    def __init__(self, http_provider='http://127.0.0.1:8545'):
         """
         Initialize the ActionController to interact with an Ethereum blockchain.
 
         Args:
             http_provider (str): The HTTP URL to connect to an Ethereum node.
         """
-        #http://ganache:7545
-        #http://127.0.0.1:7545
+        #http://ganache:8545
+        #http://127.0.0.1:8545
         self.http_provider = http_provider
         self.w3 = Web3(Web3.HTTPProvider(self.http_provider))
         assert self.w3.is_connected(), Fore.RED + "Failed to connect to Ethereum node." + Style.RESET_ALL
@@ -196,3 +196,33 @@ class ActionController:
             event (dict): The event data returned by the blockchain.
         """
         log_msg(f"New Action Logged: {event['args']}")
+
+    def register_entity(self, entity_type, *args, from_address, contract_name = 'SupplyChainRecords.sol'):
+        """
+        Registers a new entity of a specified type in the contract.
+
+        Args:
+            entity_type (str): Type of the entity to register, e.g., 'certifier', 'carrier', 'farmer', 'producer', 'seller'.
+            *args: Additional arguments required by the contract function.
+            from_address (str): The Ethereum address to send the transaction from.
+            contract_name (str): The name of the contract to use. Default is 'SupplyChainRecords'.
+
+        Returns:
+            The transaction receipt object.
+        
+        Raises:
+            ValueError: If no function is available for the specified entity type or the from_address is invalid.
+        """
+        if not from_address:
+            raise ValueError(Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
+        entity_functions = {
+            'CARRIER': 'addCarrier',
+            'CERTFIER': 'addCertifier',
+            'FARMER': 'addFarmer',
+            'PRODUCER': 'addProducer',
+            'SELLER': 'addSeller'
+        }
+        function_name = entity_functions.get(entity_type)
+        if not function_name:
+            raise ValueError(Fore.RED + f"No function available for entity type {entity_type}" + Style.RESET_ALL)
+        return self.write_data(function_name, contract_name, from_address, *args)

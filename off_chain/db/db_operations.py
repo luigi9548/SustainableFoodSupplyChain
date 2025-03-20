@@ -3,6 +3,7 @@ import sqlite3
 import os
 import hashlib
 import base64
+from typing import Self
 from cryptography.fernet import Fernet
 from colorama import Fore, Style, init
 from config import config
@@ -16,7 +17,93 @@ class DatabaseOperations:
     def __init__(self):
         self.conn = sqlite3.connect(config.config["db_path"])
         self.cur = self.conn.cursor()
+      #  self._create_new_table()
         self.today_date = datetime.date.today().strftime('%Y-%m-%d')
+
+    # Metodo da eliminare, utilizzato temporaneamente per debugging
+    def _create_new_table(self):
+        """
+        Creates necessary tables in the database if they are not already present.
+        This ensures that the database schema is prepared before any operations are performed.
+        """
+        self.cur.execute('''CREATE TABLE Credentials (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT NOT NULL,
+                        password TEXT NOT NULL,
+                        role TEXT CHECK(role IN ('USER_CERTIFIER', 'USER_ACTOR', 'ADMIN')) NOT NULL,
+                        public_key TEXT NOT NULL,
+                        private_key TEXT NOT NULL,
+                        temp_code TEXT,
+                        temp_code_validity DATETIME,
+                        publicKey TEXT NOT NULL,
+                        privateKey TEXT NOT NULL,
+                        update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        );''')
+
+        # licence it's mandatory for each actor
+        self.cur.execute('''CREATE TABLE Accounts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        credential_id INTEGER NOT NULL,
+                        type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
+                        name TEXT NOT NULL,
+                        licence_id INTEGER NOT NULL,
+                        lastname TEXT NOT NULL,
+                        birthday TEXT NOT NULL,
+                        birth_place TEXT,
+                        residence TEXT,
+                        phone TEXT,
+                        mail TEXT,
+                        FOREIGN KEY (credential_id) REFERENCES Credentials(id),
+                        FOREIGN KEY (licence_id) REFERENCES Licences(id)
+                        );''')
+
+        # Licences table to verufy the authenticity of role and mitigate misuese (aggiorno io le tabelle sul misuso, in fase di inserimento utente verifichiamo al sua licenza)
+        self.cur.execute('''CREATE TABLE Licences (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
+                    licence_number TEXT NOT NULL UNIQUE
+                    );''')
+
+
+        self.cur.execute('''CREATE TABLE Activities (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        type TEXT CHECK(type IN ('investment in a project for reduction', 'performing an action')) NOT NULL,
+                        description TEXT NOT NULL
+                        );''')
+
+
+        self.cur.execute('''CREATE TABLE Accounts_Activities (
+                        account_id INTEGER NOT NULL,
+                        activity_id INTEGER NOT NULL,
+                        PRIMARY KEY (account_id, activity_id),
+                        FOREIGN KEY (account_id) REFERENCES Accounts(id),
+                        FOREIGN KEY (activity_id) REFERENCES Activities(id)
+                        );''')
+
+
+        self.cur.execute('''CREATE TABLE Cron_Activities (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        description TEXT NOT NULL,
+                        credential_id INTEGER NOT NULL,
+                        update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        accepted BOOLEAN NOT NULL,
+                        activity_id INTEGER NOT NULL,
+                        co2_reduction DECIMAL NOT NULL,
+                        FOREIGN KEY (credential_id) REFERENCES Credentials(id),
+                        FOREIGN KEY (activity_id) REFERENCES Activities(id)
+                        );''')
+
+        self.cur.execute('''CREATE TABLE Products (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        category TEXT CHECK(role IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
+                        co2Emission INTEGER NOT NULL,
+                        harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        sensorId INTEGER NOT NULL
+                        );''')
+        self.conn.commit()
 
     def register_creds(self, username, password, role, public_key, private_key, temp_code=None, temp_code_validity=None):
         try:
@@ -109,6 +196,51 @@ class DatabaseOperations:
 
         except sqlite3.Error as e:
             print(Fore.RED + f'Error deleting credentials: {e}' + Style.RESET_ALL)
+            return -1
+
+    def insert_actor(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone):
+        """
+        Inserts a new actor record into the Accounts table in the database.
+
+        Args:
+            role (str): The role of the actor.
+            username (str): The username of the actor.
+            name (str): The first name of the actor.
+            lastname (str): The last name of the actor.
+            actorLicense (str): The license number of the actor.
+            residence (str): The residence of the actor.
+            birthdayPlace (str): The birth place of the actor.
+            birthday (str): The birthday of the actor (format YYYY-MM-DD).
+            mail (str): The email address of the actor.
+            phone (str): The phone number of the actor.
+
+        Returns:
+            int: 0 if the insertion was successful, -1 if an integrity error occurred, such as violating unique constraints
+                or foreign key references.
+
+        Exceptions:
+            sqlite3.IntegrityError: Catches and handles any integrity errors during the insertion process, which typically occur
+                                    due to violation of database constraints like unique keys or foreign key constraints.
+        """
+        try:
+            self.cur.execute("""
+                            INSERT INTO Accounts
+                            (type, name, license_id, lastname, birthday, birthday_place, residence, phone, mail) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?) """,
+                            (
+                                role,
+                                name,
+                                actorLicense,
+                                lastname,
+                                birthday,
+                                birthdayPlace,
+                                residence,
+                                phone,
+                                mail
+                            ))
+            self.conn.commit()
+            return 0
+        except sqlite3.IntegrityError:
             return -1
 
     def check_username(self, username):
@@ -466,3 +598,47 @@ class DatabaseOperations:
             except Exception:
                 return -1
         return -1
+
+    def key_exists(self, public_key, private_key):
+        """
+        Checks if either a public key or a private key already exists in the Credentials table.
+
+        Args:
+            public_key (str): The public key to check against existing entries in the database.
+            private_key (str): The private key to check against existing entries in the database.
+
+        Returns:
+            bool: True if either the public or private key is found in the database (indicating they are not unique),
+                  False if neither key is found (indicating they are unique) or an exception occurs during the query.
+        
+        Exceptions:
+            Exception: Catches and prints any exception that occurs during the database operation, returning False.
+        """
+        try:
+            query = "SELECT public_key, private_key FROM Credentials WHERE public_key=? OR private_key=?"
+            existing_users = self.cur.execute(query, (public_key, private_key)).fetchall()
+            return len(existing_users) > 0
+        except Exception as e:
+            print(Fore.RED + f"An error occurred: {e}" + Style.RESET_ALL)
+            return False 
+
+    def get_public_key_by_username(self, username):
+        """
+        Retrieve the public key for a given username from the Credentials table.
+
+        Args:
+            username (str): The username of the user whose public key is to be retrieved.
+
+        Returns:
+            str: The public key of the user if found, None otherwise.
+        """
+        try:
+            self.cur.execute("SELECT public_key FROM Credentials WHERE username = ?", (username,))
+            result = self.cur.fetchone()
+            if result:
+                return result[0]  # Return the public key
+            else:
+                return None  # Public key not found
+        except Exception as e:
+            print(Fore.RED + f"An error occurred while retrieving public key: {e}" + Style.RESET_ALL)
+            return None

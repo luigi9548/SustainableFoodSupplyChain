@@ -122,7 +122,7 @@ pragma solidity ^0.8.20;
      * @param lastName Last name of the certifier.
      * @notice Only authorized users can add certifier records.
      */
-    function addCertificator(string memory name, string memory lastName) public onlyAuthorized {
+    function addCertifier(string memory name, string memory lastName) public onlyAuthorized {
         require(!certifiers[msg.sender].isRegistered, "Certifier already registered");
         Certifier storage certifier = certifiers[msg.sender];
         certifier.name = name;
