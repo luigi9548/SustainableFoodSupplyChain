@@ -187,7 +187,7 @@ class CommandLineInterface:
             if reg_code == 0:
                 print(Fore.GREEN + 'You have succesfully registered!\n' + Style.RESET_ALL)
                 if role == 'C':
-                    self.insert_actor_info(username, 'CERTFIER')
+                    self.insert_actor_info(username, 'CERTIFIER')
                 elif role == 'F':
                     self.insert_actor_info(username, 'FARMER')
                 elif role == 'R':
@@ -253,11 +253,12 @@ class CommandLineInterface:
             else: print(Fore.RED + "Invalid phone number format.\n" + Style.RESET_ALL)
 
         from_address_actor = self.controller.get_public_key_by_username(username)
+        credentials_id = self.controller.get_credentials_id_by_username(username)
         self.act_controller.register_entity(role, name, lastname, from_address=from_address_actor)
-        insert_code = self.controller.insert_medic_info(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
+        insert_code = self.controller.insert_actor_info(role, credentials_id, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
         if insert_code == 0:
             print(Fore.GREEN + 'Information saved correctly!' + Style.RESET_ALL)
-            self.medic_menu(username)
+            # self.medic_menu(username) Inserire switch case per i vari ruoli 
         elif insert_code == -1:
             print(Fore.RED + 'Internal error!' + Style.RESET_ALL)
     

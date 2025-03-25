@@ -70,10 +70,9 @@ pragma solidity ^0.8.20;
     event ActionLogged(uint256 indexed actionId, string actionType, address indexed initiator, uint256 indexed timestamp, string details);
 
     /**
-     * @dev Inizialize carbon credit, sets the contract owner as the deployer and initializes authorized editors.
+     * @dev Sets the contract owner as the deployer and initializes authorized editors.
      */
-    constructor(/*address _carbonCreditToken*/) {
-        //carbonCreditToken = ICarbonCreditToken(_carbonCreditToken);
+    constructor() {
         owner = msg.sender;
         authorizedEditors[owner] = true;
     }
@@ -94,6 +93,14 @@ pragma solidity ^0.8.20;
         require(msg.sender == owner || authorizedEditors[msg.sender], "Access denied: caller is not the owner or an authorized editor.");
         _;
     }
+    
+    /**
+     * @dev Return Owner Account.
+     */
+    function getOwner() public view returns (address) {
+        return owner;
+    }
+
 
     // Functions
     /**

@@ -7,6 +7,7 @@ from typing import Self
 from cryptography.fernet import Fernet
 from colorama import Fore, Style, init
 from config import config
+from models.accounts import Accounts
 
 class DatabaseOperations:
     """
@@ -220,16 +221,16 @@ class DatabaseOperations:
             print(Fore.RED + f'Error deleting credentials: {e}' + Style.RESET_ALL)
             return -1
 
-    def insert_actor(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone):
+    def insert_actor(self, role, credentials_id, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone):
         """
         Inserts a new actor record into the Accounts table in the database.
 
         Args:
             role (str): The role of the actor.
-            username (str): The username of the actor.
+            credentials_id (int): The ID of the credentials record associated with the actor.
             name (str): The first name of the actor.
             lastname (str): The last name of the actor.
-            actorLicense (str): The license number of the actor.
+            actorLicense (int): The license number of the actor.
             residence (str): The residence of the actor.
             birthdayPlace (str): The birth place of the actor.
             birthday (str): The birthday of the actor (format YYYY-MM-DD).
@@ -247,9 +248,10 @@ class DatabaseOperations:
         try:
             self.cur.execute("""
                             INSERT INTO Accounts
-                            (type, name, license_id, lastname, birthday, birthday_place, residence, phone, mail) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?) """,
+                            (credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) """,
                             (
+                                credentials_id,
                                 role,
                                 name,
                                 actorLicense,
@@ -262,7 +264,7 @@ class DatabaseOperations:
                             ))
             self.conn.commit()
             return 0
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as e:
             return -1
 
     def check_username(self, username):
@@ -701,3 +703,46 @@ class DatabaseOperations:
         except Exception as e:
             print(Fore.RED + f"An error occurred while retrieving public key: {e}" + Style.RESET_ALL)
             return None
+
+    def get_credentials_id_by_username(self, username):
+        """
+        Retrieve the credentials id for a given username from the Credentials table.
+
+        Args:
+            username (str): The username of the user whose public key is to be retrieved.
+
+        Returns:
+            int: The crdentials id of the user if found, None otherwise.
+        """
+        try:
+            self.cur.execute("SELECT id FROM Credentials WHERE username = ?", (username,))
+            result = self.cur.fetchone()
+            if result:
+                return result[0]  # Return the public key
+            else:
+                return None  # Public key not found
+        except Exception as e:
+            print(Fore.RED + f"An error occurred while retrieving credntials id: {e}" + Style.RESET_ALL)
+            return None
+
+    def get_user(self, name, lastname, mail):
+        """
+        Retrieves a user's detailed information from table Account.
+
+        Args:
+            name (str): The first name of the user.
+            lastname (str): The last name of the user.
+            mail (str): The email address of the user.
+
+        Returns:
+            Accounts: An instance of the Accounts class if the user exists, otherwise, None.
+        """
+
+        user = self.cur.execute("""
+                                    SELECT *
+                                    FROM Accounts
+                                    WHERE Accounts.name = ? AND Accounts.lastname = ? AND Accounts.mail = ?""", (name, lastname, mail)).fetchone()
+
+        if user is not None:
+            return Accounts(*user)
+        return None

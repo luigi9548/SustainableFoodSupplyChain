@@ -1,6 +1,6 @@
 from models.model_base import Model
 from colorama import Fore, Style, init
-from db.db_operations import DatabaseOperations
+# from db.db_operations import DatabaseOperations
 
 class Accounts(Model):
     """
@@ -8,7 +8,7 @@ class Accounts(Model):
     extending the functionality provided by the Model class.
     """
 
-    def __init__(self, id, credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail, db):
+    def __init__(self, id, credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail):
         """
         Initializes a new instance of Account class with the provided account  details.
 
@@ -37,7 +37,7 @@ class Accounts(Model):
         self.residence = residence
         self.phone = phone
         self.mail = mail
-        self.db = db
+      #  self.db = db
 
     # Getter methods for each attribute
     def get_id(self):
@@ -107,11 +107,11 @@ class Accounts(Model):
     def set_mail(self, mail):
         self.mail = mail
       
-    def save(self):
-        """
+    """def save(self):
+
         Saves a new or updates an existing Accounts record in the database.
         Implements SQL queries to insert or update credentials based on the presence of an ID.
-        """
+
         if self.id is None:
             # Inserts new accounts record into the database
             result = db.register_account(self.credential_id, self.type, self.name, self.lastname, self.birthday,
@@ -128,9 +128,9 @@ class Accounts(Model):
             print(Fore.RED + 'Error saving information!\n' + Style.RESET_ALL)
         
     def delete(self):
-        """
+
         Deletes an Account record from the database based on its ID.
-        """
+      
         if self.id is not None:
             result = db.delete_account(self.id)
             if result == 0:
@@ -139,4 +139,4 @@ class Accounts(Model):
                 print(Fore.RED + 'Error deleting account!\n' + Style.RESET_ALL)
             return result
         else:
-            return -1
+            return -1 """

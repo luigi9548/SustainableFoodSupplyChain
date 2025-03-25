@@ -199,7 +199,7 @@ class ActionController:
         """
         log_msg(f"New Action Logged: {event['args']}")
 
-    def register_entity(self, entity_type, *args, from_address, contract_name = 'SupplyChainRecords.sol'):
+    def register_entity(self, entity_type, *args, from_address, contract_name = 'SupplyChainRecords'):
         """
         Registers a new entity of a specified type in the contract.
 
@@ -217,9 +217,15 @@ class ActionController:
         """
         if not from_address:
             raise ValueError(Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
+
+        owner_address = self.contracts[contract_name].functions.getOwner().call()
+        tx_hash = self.contracts[contract_name].functions.authorizeEditor(from_address).transact({'from': owner_address})
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+
+
         entity_functions = {
             'CARRIER': 'addCarrier',
-            'CERTFIER': 'addCertifier',
+            'CERTIFIER': 'addCertifier',
             'FARMER': 'addFarmer',
             'PRODUCER': 'addProducer',
             'SELLER': 'addSeller'
