@@ -59,7 +59,7 @@ class DatabaseOperations:
         # licence it's mandatory for each actor
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Accounts (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        credential_id INTEGER NOT NULL,
+                        username TEXT NOT NULL,
                         type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
                         name TEXT NOT NULL,
                         licence_id INTEGER NOT NULL,
@@ -69,7 +69,7 @@ class DatabaseOperations:
                         residence TEXT,
                         phone TEXT,
                         mail TEXT,
-                        FOREIGN KEY (credential_id) REFERENCES Credentials(id),
+                        FOREIGN KEY (username) REFERENCES Credentials(username),
                         FOREIGN KEY (licence_id) REFERENCES Licences(id)
                         );''')
 
@@ -221,13 +221,13 @@ class DatabaseOperations:
             print(Fore.RED + f'Error deleting credentials: {e}' + Style.RESET_ALL)
             return -1
 
-    def insert_actor(self, role, credentials_id, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone):
+    def insert_actor(self, role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone):
         """
         Inserts a new actor record into the Accounts table in the database.
 
         Args:
             role (str): The role of the actor.
-            credentials_id (int): The ID of the credentials record associated with the actor.
+            username (str): The username of the actor.
             name (str): The first name of the actor.
             lastname (str): The last name of the actor.
             actorLicense (int): The license number of the actor.
@@ -248,10 +248,10 @@ class DatabaseOperations:
         try:
             self.cur.execute("""
                             INSERT INTO Accounts
-                            (credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail) 
+                            (username, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) """,
                             (
-                                credentials_id,
+                                username,
                                 role,
                                 name,
                                 actorLicense,
@@ -413,31 +413,17 @@ class DatabaseOperations:
         self.cur.execute("SELECT * FROM Products")
         return self.cur.fetchall()
 
-    def register_account(self, credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id):
-        """
-        Inserts a new account record into the database.
-        """
-        try:
-            self.cur.execute("""
-            INSERT INTO Accounts (credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (credential_id, type, name, lastname, birthday, birth_place, residence, phone, mail, licence_id))
-            self.conn.commit()
-            return 0
-        except sqlite3.IntegrityError:
-            return -1
-
-    def update_account(self, credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail, id):
+    def update_account(self, username, name, lastname, birthday, birth_place, residence, phone, mail, id):
         """
         Updates an existing account record in the database.
         """
         try:
             self.cur.execute("""
             UPDATE Accounts 
-            SET credential_id = ?, type = ?, name = ?, licence_id = ?, lastname = ?, birthday = ?, 
+            SET username = ?, name = ?, lastname = ?, birthday = ?, 
                 birth_place = ?, residence = ?, phone = ?, mail = ? 
             WHERE id = ?""",
-            (credential_id, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail, id))
+            (username, name, lastname, birthday, birth_place, residence, phone, mail, id))
             self.conn.commit()
             return 0
         except sqlite3.Error:
@@ -704,35 +690,12 @@ class DatabaseOperations:
             print(Fore.RED + f"An error occurred while retrieving public key: {e}" + Style.RESET_ALL)
             return None
 
-    def get_credentials_id_by_username(self, username):
-        """
-        Retrieve the credentials id for a given username from the Credentials table.
-
-        Args:
-            username (str): The username of the user whose public key is to be retrieved.
-
-        Returns:
-            int: The crdentials id of the user if found, None otherwise.
-        """
-        try:
-            self.cur.execute("SELECT id FROM Credentials WHERE username = ?", (username,))
-            result = self.cur.fetchone()
-            if result:
-                return result[0]  # Return the public key
-            else:
-                return None  # Public key not found
-        except Exception as e:
-            print(Fore.RED + f"An error occurred while retrieving credntials id: {e}" + Style.RESET_ALL)
-            return None
-
-    def get_user(self, name, lastname, mail):
+    def get_user_by_username(self, username):
         """
         Retrieves a user's detailed information from table Account.
 
         Args:
-            name (str): The first name of the user.
-            lastname (str): The last name of the user.
-            mail (str): The email address of the user.
+            username (str): The username of the user.
 
         Returns:
             Accounts: An instance of the Accounts class if the user exists, otherwise, None.
@@ -741,7 +704,7 @@ class DatabaseOperations:
         user = self.cur.execute("""
                                     SELECT *
                                     FROM Accounts
-                                    WHERE Accounts.name = ? AND Accounts.lastname = ? AND Accounts.mail = ?""", (name, lastname, mail)).fetchone()
+                                    WHERE Accounts.username = ?""", (username,)).fetchone()
 
         if user is not None:
             return Accounts(*user)

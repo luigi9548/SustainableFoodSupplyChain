@@ -41,7 +41,7 @@ cur.execute('''CREATE TRIGGER update_Credentials_timestamp
 # licence it's mandatory for each actor
 cur.execute('''CREATE TABLE Accounts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            credential_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
             type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
             name TEXT NOT NULL,
             licence_id INTEGER NOT NULL,
@@ -51,7 +51,7 @@ cur.execute('''CREATE TABLE Accounts (
             residence TEXT,
             phone TEXT,
             mail TEXT,
-            FOREIGN KEY (credential_id) REFERENCES Credentials(id),
+            FOREIGN KEY (username) REFERENCES Credentials(username),
             FOREIGN KEY (licence_id) REFERENCES Licences(id)
             );''')
 

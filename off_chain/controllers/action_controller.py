@@ -234,3 +234,33 @@ class ActionController:
         if not function_name:
             raise ValueError(Fore.RED + f"No function available for entity type {entity_type}" + Style.RESET_ALL)
         return self.write_data(function_name, contract_name, from_address, *args)
+
+    def update_entity(self, entity_type, *args, from_address, contract_name = 'SupplyChainRecords'):
+        """
+        Updates an existing entity of a specified type in the contract.
+
+        Args:
+            entity_type (str): Type of the entity to update.
+            *args: Additional arguments required by the contract function.
+            from_address (str): The Ethereum address to send the transaction from.
+            contract_name (str): The name of the contract to use. Default is 'SupplyChainRecords'.
+
+        Returns:
+            The transaction receipt object.
+
+        Raises:
+            ValueError: If no function is available for the specified entity type or the from_address is invalid.
+        """
+        if not from_address:
+            raise ValueError(Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
+        update_functions = {
+            'CARRIER': 'updateCarrier',
+            'CERTIFIER': 'updateCertifier',
+            'FARMER': 'updateFarmer',
+            'PRODUCER': 'updateProducer',
+            'SELLER': 'updateSeller'
+        }
+        function_name = update_functions.get(entity_type)
+        if not function_name:
+            raise ValueError(Fore.RED + f"No function available for entity type {entity_type}" + Style.RESET_ALL)
+        return self.write_data(function_name, contract_name, from_address, *args)

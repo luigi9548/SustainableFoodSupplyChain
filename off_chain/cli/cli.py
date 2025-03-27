@@ -6,7 +6,7 @@ from controllers.controller import Controller
 from controllers.action_controller import ActionController
 from session.session import Session
 from db.db_operations import DatabaseOperations
-#from cli.utils import Utils
+from cli.utils import Utils
 from colorama import Fore, Style, init
 
 
@@ -24,7 +24,7 @@ class CommandLineInterface:
         self.act_controller = ActionController()
         self.session = session
         self.ops = DatabaseOperations()
-        #self.util = Utils(session)
+        self.util = Utils(session)
 
         self.menu = {
             1: 'Registra utente',
@@ -253,15 +253,99 @@ class CommandLineInterface:
             else: print(Fore.RED + "Invalid phone number format.\n" + Style.RESET_ALL)
 
         from_address_actor = self.controller.get_public_key_by_username(username)
-        credentials_id = self.controller.get_credentials_id_by_username(username)
         self.act_controller.register_entity(role, name, lastname, from_address=from_address_actor)
-        insert_code = self.controller.insert_actor_info(role, credentials_id, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
+        insert_code = self.controller.insert_actor_info(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
         if insert_code == 0:
             print(Fore.GREEN + 'Information saved correctly!' + Style.RESET_ALL)
+            if role == 'CERTIFIER':
+                self.certifier_menu(username)
+            """
+            elif role == 'F':
+                self.medic_menu(username)
+            elif role == 'R':
+                self.medic_menu(username)
+            elif role == 'S':
+                self.medic_menu(username)
+            elif role == 'P':
+                self.medic_menu(username)"""
             # self.medic_menu(username) Inserire switch case per i vari ruoli 
         elif insert_code == -1:
             print(Fore.RED + 'Internal error!' + Style.RESET_ALL)
     
+    def certifier_menu(self, username):
+        """
+        This method presents certifier with a menu of options tailored to their role. 
+        It allows certifier to choose actions such as selecting a patient, viewing or 
+        updating their profile, changing their password, or logging out. The method 
+        handles user input validation and directs users to the corresponding functionality 
+        based on their choice.
+
+        Args:
+            username (str): The username of the logged-in certifier.
+        """
+
+        medic_options = {
+            1: "Choose patient",
+            2: "View profile",
+            3: "Update profile",
+            4: "Change password",
+            5: "Log out"
+        }
+
+        while True:
+            print(Fore.CYAN + "\nMENU" + Style.RESET_ALL)                           
+            for key, value in medic_options.items():
+                print(f"{key} -- {value}")
+                                                
+            try:                                    
+                choice = int(input("Choose an option: "))
+                if choice in medic_options:
+                    if choice == 1:
+                        self.util.display_records(username)
+
+                    elif choice == 2:
+                        self.view_certifierView(username)
+
+                    elif choice == 3:                           
+                        self.util.update_profile(username, "CERTIFIER")
+                
+                    elif choice == 4:
+                        self.util.change_passwd(username)
+
+                    elif choice == 5:
+                        confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
+                        if confirm == 'Y':
+                            print(Fore.CYAN + "\nThank you for using the service!\n" + Style.RESET_ALL)
+                            self.session.reset_session()
+                            return
+                        else:
+                            print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
+
+            except ValueError:
+                print(Fore.RED + "Invalid Input! Please enter a valid number." + Style.RESET_ALL)
+
+    def view_certifierView(self, username):
+        """
+        This method retrieves and displays the profile information of the certifier 
+        identified by the given username.
+
+        Args:
+            username (str): The username of the certifier whose profile is to be viewed.
+        """
+
+        certifierView = self.controller.get_user_by_username(username)
+        print(Fore.CYAN + "\nCERTIFIER INFO\n" + Style.RESET_ALL)
+        print("Username: ", certifierView.get_username())
+        print("Name: ", certifierView.get_name())
+        print("Lastname: ", certifierView.get_lastname())
+        print("License: ", certifierView.get_licence_id())
+        print("Birthday: ", certifierView.get_birthday())
+        print("Birthday place: ", certifierView.get_birth_place())
+        print("Residence: ", certifierView.get_residence())
+        print("E-mail: ", certifierView.get_mail())
+        print("Phone: ",certifierView.get_phone())
+        input("\nPress Enter to exit\n")
+
 
 
 if __name__ == "__main__":

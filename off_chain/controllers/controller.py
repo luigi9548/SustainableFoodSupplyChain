@@ -37,7 +37,7 @@ class Controller:
 
         return registration_code
 
-    def insert_actor_info(self, role: str, credentials_id: int, name: str, lastname: str, actorLicense: int, residence: str, birthdayPlace: str, birthday: str, mail: str, phone: str):
+    def insert_actor_info(self, role: str, username: str, name: str, lastname: str, actorLicense: int, residence: str, birthdayPlace: str, birthday: str, mail: str, phone: str):
         """
         Inserts actor information into the database.
 
@@ -53,10 +53,10 @@ class Controller:
         :param phone: The phone number of the actor.
         :return: An insertion code indicating success (0) or failure.
         """
-        insertion_code = self.db_ops.insert_actor(role, credentials_id, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
+        insertion_code = self.db_ops.insert_actor(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
 
         if insertion_code == 0:
-            user = self.db_ops.get_user(name, lastname, mail) 
+            user = self.get_user_by_username(username) 
             self.session.set_user(user)
             print(Fore.GREEN + 'DONE' + Style.RESET_ALL)
 
@@ -134,5 +134,9 @@ class Controller:
     def get_public_key_by_username(self, username):
         return self.db_ops.get_public_key_by_username(username)
 
-    def get_credentials_id_by_username(self, username):
-        return self.db_ops.get_credentials_id_by_username(username)
+    def get_user_by_username(self, username):
+        return self.db_ops.get_user_by_username(username)
+
+    def update_actor_info(self, user):
+        return self.db_ops.update_account(user.get_username(), user.get_name(), user.get_lastname(),  user.get_birthday(), user.get_birth_place(), user.get_residence(),
+                                         user.get_phone(), user.get_mail(), user.get_id())
