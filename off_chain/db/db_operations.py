@@ -19,6 +19,7 @@ class DatabaseOperations:
         self.conn = sqlite3.connect(config.config["db_path"])
         self.cur = self.conn.cursor()
         self._create_new_table()
+        self.insert_test_records()
         self.today_date = datetime.date.today().strftime('%Y-%m-%d')
 
     # Metodo da eliminare, utilizzato temporaneamente per debugging
@@ -37,9 +38,8 @@ class DatabaseOperations:
 
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Credentials (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        username TEXT NOT NULL,
+                        username TEXT NOT NULL UNIQUE,
                         password TEXT NOT NULL,
-                        role TEXT CHECK(role IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
                         public_key TEXT NOT NULL,
                         private_key TEXT NOT NULL,
                         temp_code TEXT,
@@ -89,10 +89,10 @@ class DatabaseOperations:
 
 
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Accounts_Activities (
-                        account_id INTEGER NOT NULL,
+                        username TEXT NOT NULL,
                         activity_id INTEGER NOT NULL,
-                        PRIMARY KEY (account_id, activity_id),
-                        FOREIGN KEY (account_id) REFERENCES Accounts(id),
+                        PRIMARY KEY (username, activity_id),
+                        FOREIGN KEY (username) REFERENCES Credentials(username),
                         FOREIGN KEY (activity_id) REFERENCES Activities(id)
                         );''')
 
@@ -100,13 +100,13 @@ class DatabaseOperations:
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Cron_Activities (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         description TEXT NOT NULL,
-                        credential_id INTEGER NOT NULL,
+                        username TEXT NOT NULL,
                         update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        accepted BOOLEAN NOT NULL,
+                        state INTEGER NOT NULL CHECK(state IN (0, 1, 2)),
                         activity_id INTEGER NOT NULL,
                         co2_reduction DECIMAL NOT NULL,
-                        FOREIGN KEY (credential_id) REFERENCES Credentials(id),
+                        FOREIGN KEY (username) REFERENCES Credentials(username),
                         FOREIGN KEY (activity_id) REFERENCES Activities(id)
                         );''')
 
@@ -126,6 +126,41 @@ class DatabaseOperations:
                         harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         sensorId INTEGER NOT NULL
                         );''')
+        self.conn.commit()
+
+    def insert_test_records(self):
+        self.cur.execute('''INSERT INTO Licences (type, licence_number) VALUES
+                            ('FARMER', '2001'),
+                            ('CARRIER', '2002'),
+                            ('SELLER', '2003'),
+                            ('PRODUCER', '2004'),
+                            ('CERTIFIER', '2005');''')
+
+        self.cur.execute('''INSERT INTO Credentials (username, password, public_key, private_key) VALUES
+                            ('farmer_user', 'N5K+n8DAAmZKfbqK', '0xd141E7900D4f756f492e463957BC0e68202CbD81', '0x30c4e61c6f0e1803219ecdccdf576086f8f4e128d1911f68db95d05fd5fb5a49'),
+                            ('carrier_user', 'd3bHfBVNydAh+5yy', '0x939878DE3937a84c413Dc4ADE09440c00F151911', '0x164f9c762d3cec7ba488e8488e5052abd413c5418db1197719ad00f9a4d76a00');''')
+
+        self.cur.execute('''INSERT INTO Accounts (username, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail) VALUES
+                            ('farmer_user', 'FARMER', 'John', 1, 'Doe', '1980-05-10', 'Milan', 'Rome', '1234567890', 'john@example.com'),
+                            ('carrier_user', 'CARRIER', 'Jane', 2, 'Smith', '1985-08-20', 'Paris', 'London', '0987654321', 'jane@example.com');''')
+
+        self.cur.execute('''INSERT INTO Activities (type, description) VALUES
+                            ('investment in a project for reduction', 'Investing in solar panels'),
+                            ('performing an action', 'Using electric vehicles for transport');''')
+
+        self.cur.execute('''INSERT INTO Accounts_Activities (username, activity_id) VALUES
+                            ('farmer_user', 1),
+                            ('carrier_user', 2);''')
+
+        self.cur.execute('''INSERT INTO Cron_Activities (description, username, state, activity_id, co2_reduction) VALUES
+                            ('Solar panel investment', 'farmer_user', 0, 1, 50.0),
+                            ('Electric vehicle implementation', 'carrier_user', 0, 2, 30.5);''')
+
+        self.cur.execute('''INSERT INTO Products (name, category, co2Emission, sensorId) VALUES
+                            ('Apple', 'FRUIT', 10, 101),
+                            ('Beef', 'MEAT', 50, 102),
+                            ('Cheese', 'DAIRY', 20, 103);''')
+
         self.conn.commit()
 
     def register_creds(self, username, password, role, public_key, private_key, temp_code=None, temp_code_validity=None):

@@ -17,18 +17,17 @@ cur.execute("DROP TABLE IF EXISTS Products")
 
 # TODO do we want to leave the admin?
 # TODO public, private key, encrypt at rest.
-cur.execute('''CREATE TABLE Credentials (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT CHECK(role IN ('USER_CERTIFIER', 'USER_ACTOR', 'ADMIN')) NOT NULL,
-            public_key TEXT NOT NULL,
-            private_key TEXT NOT NULL,
-            temp_code TEXT,
-            temp_code_validity DATETIME,
-            update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );''')
+cur.execute('''CREATE TABLE IF NOT EXISTS Credentials (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               username TEXT NOT NULL UNIQUE,
+               password TEXT NOT NULL,
+               public_key TEXT NOT NULL,
+               private_key TEXT NOT NULL,
+               temp_code TEXT,
+               temp_code_validity DATETIME,
+               update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+               creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+               );''')
 
 # trigger for automatic update of update_datetime
 cur.execute('''CREATE TRIGGER update_Credentials_timestamp
@@ -70,27 +69,27 @@ cur.execute('''CREATE TABLE Activities (
             );''')
 
 
-cur.execute('''CREATE TABLE Accounts_Activities (
-            account_id INTEGER NOT NULL,
-            activity_id INTEGER NOT NULL,
-            PRIMARY KEY (account_id, activity_id),
-            FOREIGN KEY (account_id) REFERENCES Accounts(id),
-            FOREIGN KEY (activity_id) REFERENCES Activities(id)
-            );''')
+cur.execute('''CREATE TABLE IF NOT EXISTS Accounts_Activities (
+               username TEXT NOT NULL,
+               activity_id INTEGER NOT NULL,
+               PRIMARY KEY (username, activity_id),
+               FOREIGN KEY (username) REFERENCES Credentials(username),
+               FOREIGN KEY (activity_id) REFERENCES Activities(id)
+               );''')
 
 
-cur.execute('''CREATE TABLE Cron_Activities (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            description TEXT NOT NULL,
-            credential_id INTEGER NOT NULL,
-            update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            accepted BOOLEAN NOT NULL,
-            activity_id INTEGER NOT NULL,
-            co2_reduction DECIMAL NOT NULL,
-            FOREIGN KEY (credential_id) REFERENCES Credentials(id),
-            FOREIGN KEY (activity_id) REFERENCES Activities(id)
-            );''')
+cur.execute('''CREATE TABLE IF NOT EXISTS Cron_Activities (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               description TEXT NOT NULL,
+               username TEXT NOT NULL,
+               update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+               creation_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+               state INTEGER NOT NULL CHECK(state IN (0, 1, 2)),
+               activity_id INTEGER NOT NULL,
+               co2_reduction DECIMAL NOT NULL,
+               FOREIGN KEY (username) REFERENCES Credentials(username),
+               FOREIGN KEY (activity_id) REFERENCES Activities(id)
+               );''')
 
 cur.execute('''CREATE TRIGGER update_Cron_Activities_timestamp
             AFTER UPDATE ON Cron_Activities
