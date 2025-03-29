@@ -8,6 +8,7 @@ from cryptography.fernet import Fernet
 from colorama import Fore, Style, init
 from config import config
 from models.accounts import Accounts
+from models.cron_activities import Cron_Activities
 
 class DatabaseOperations:
     """
@@ -169,15 +170,15 @@ class DatabaseOperations:
                 obfuscated_private_k = self.encrypt_private_k(private_key, password)
                 hashed_passwd = self.hash_function(password)
                 self.cur.execute("""
-                    INSERT INTO Credentials (username, password, role, public_key, private_key, temp_code, temp_code_validity)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (username, hashed_passwd, role, public_key, obfuscated_private_k, temp_code, temp_code_validity))
+                    INSERT INTO Credentials (username, password, public_key, private_key, temp_code, temp_code_validity)
+                    VALUES (?, ?, ?, ?, ?, ?)""",
+                    (username, hashed_passwd, public_key, obfuscated_private_k, temp_code, temp_code_validity))
                 self.conn.commit()
                 return 0
             else:
                 return -1
         except sqlite3.IntegrityError as e:
-            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL) #possiamo anche non stampare e??? boh -> rientra nella mitigazione del misuso secondo me stamperei
+            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL)
             return -1
         
     def update_creds(self, id, username=None, password=None, role=None, public_key=None, private_key=None, temp_code=None, temp_code_validity=None):
@@ -744,3 +745,35 @@ class DatabaseOperations:
         if user is not None:
             return Accounts(*user)
         return None
+
+    def get_users(self):
+        """
+        Retrieves all users from the Accounts table.
+        """
+        self.cur.execute("SELECT * FROM Accounts")
+
+        users = [Accounts(id, username, role, name, licence_id, lastname, birthday, birth_place, residence, phone, mail)
+                 for id, username, role, name, licence_id, lastname, birthday, birth_place, residence, phone, mail in self.cur.fetchall()]
+        return users
+
+    def get_activities_to_be_processed(self):
+        """
+        Retrieves all activities that have not been processed yet.
+        """
+        self.cur.execute("SELECT * FROM Cron_Activities WHERE state = 0")
+        
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction) 
+                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
+
+        return activities
+
+    def get_activities_by_username(self, username):
+        """
+        Retrieves all activities for a given username.
+        """
+        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ?", (username,))
+
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
+                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
+        
+        return activities

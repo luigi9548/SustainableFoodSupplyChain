@@ -140,3 +140,12 @@ class Controller:
     def update_actor_info(self, user):
         return self.db_ops.update_account(user.get_username(), user.get_name(), user.get_lastname(),  user.get_birthday(), user.get_birth_place(), user.get_residence(),
                                          user.get_phone(), user.get_mail(), user.get_id())
+
+    def get_activities_to_be_processed(self):
+        return self.db_ops.get_activities_to_be_processed()
+
+    def get_activities_by_username(self, username):
+        return self.db_ops.get_activities_by_username(username)
+
+    def get_users(self):
+        return self.db_ops.get_users()

@@ -284,35 +284,52 @@ class CommandLineInterface:
             username (str): The username of the logged-in certifier.
         """
 
-        medic_options = {
-            1: "Choose patient",
-            2: "View profile",
-            3: "Update profile",
-            4: "Change password",
-            5: "Log out"
+        certifier_options = {
+            1: "View activities to be processed",
+            2: "View user activities",
+            3: "View users data",
+            4: "View user data",
+            5: "View products data", 
+            6: "Assign Carbon credits",
+            7: "Remove Carbon credits",
+            8: "View profile",
+            9: "Update profile",
+            10: "Change password",
+            11: "Log out"
         }
 
         while True:
             print(Fore.CYAN + "\nMENU" + Style.RESET_ALL)                           
-            for key, value in medic_options.items():
+            for key, value in certifier_options.items():
                 print(f"{key} -- {value}")
                                                 
             try:                                    
                 choice = int(input("Choose an option: "))
-                if choice in medic_options:
+                if choice in certifier_options:
                     if choice == 1:
-                        self.util.display_records(username)
+                        self.util.view_activitiesToBeProcessed()
 
                     elif choice == 2:
-                        self.view_certifierView(username)
+                        username = input("Enter the username of the user whose activities you want to view: ")
+                        self.util.view_userActivities(username)
 
-                    elif choice == 3:                           
+                    elif choice == 3:
+                        self.util.view_usersView()
+
+                    elif choice == 4:
+                        username = input("Enter the username of the user whose profile you want to view: ")
+                        self.util.view_userView(username, "\nUSER INFO\n")
+
+                    elif choice == 8:
+                        self.util.view_userView(username, "\nCERTIFIER INFO\n")
+
+                    elif choice == 9:                           
                         self.util.update_profile(username, "CERTIFIER")
                 
-                    elif choice == 4:
+                    elif choice == 10:
                         self.util.change_passwd(username)
 
-                    elif choice == 5:
+                    elif choice == 11:
                         confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
                         if confirm == 'Y':
                             print(Fore.CYAN + "\nThank you for using the service!\n" + Style.RESET_ALL)
@@ -323,30 +340,6 @@ class CommandLineInterface:
 
             except ValueError:
                 print(Fore.RED + "Invalid Input! Please enter a valid number." + Style.RESET_ALL)
-
-    def view_certifierView(self, username):
-        """
-        This method retrieves and displays the profile information of the certifier 
-        identified by the given username.
-
-        Args:
-            username (str): The username of the certifier whose profile is to be viewed.
-        """
-
-        certifierView = self.controller.get_user_by_username(username)
-        print(Fore.CYAN + "\nCERTIFIER INFO\n" + Style.RESET_ALL)
-        print("Username: ", certifierView.get_username())
-        print("Name: ", certifierView.get_name())
-        print("Lastname: ", certifierView.get_lastname())
-        print("License: ", certifierView.get_licence_id())
-        print("Birthday: ", certifierView.get_birthday())
-        print("Birthday place: ", certifierView.get_birth_place())
-        print("Residence: ", certifierView.get_residence())
-        print("E-mail: ", certifierView.get_mail())
-        print("Phone: ",certifierView.get_phone())
-        input("\nPress Enter to exit\n")
-
-
 
 if __name__ == "__main__":
     session = Session()
