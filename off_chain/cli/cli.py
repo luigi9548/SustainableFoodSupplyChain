@@ -33,7 +33,7 @@ class CommandLineInterface:
         }
 
 
-    # lo togliamo ? 
+    # lo togliamo ?
     def print_menu(self):
         """Displays the menu and handles user choices."""
         print(Fore.CYAN + r"""
@@ -55,8 +55,8 @@ class CommandLineInterface:
                 self.registration_menu()
             elif choice == 2:
                 print('Login')
-               # todo action controller e menu 
-              
+            # todo action controller e menu
+
             elif choice == 3:
                 print('Esci!')
                 exit()
@@ -95,7 +95,7 @@ class CommandLineInterface:
             public_key = input('Public Key: ')
             private_key = getpass.getpass('Private Key: ')
             confirm_private_key = getpass.getpass('Confirm Private Key: ')
-            
+
             if private_key == confirm_private_key:
                 if self.controller.check_keys(public_key, private_key):
                     print(Fore.RED + 'A wallet with these keys already exists. Please enter a unique set of keys.' + Style.RESET_ALL)
@@ -118,7 +118,7 @@ class CommandLineInterface:
             else:
                 print(Fore.RED + 'Private key and confirmation do not match. Try again.\n' + Style.RESET_ALL)
 
-        
+
         if is_address(public_key) and (public_key == pk):
 
             print('Enter your personal information.')
@@ -167,7 +167,7 @@ class CommandLineInterface:
                         print(Fore.RED + "Role not confirmed. Retry\n" + Style.RESET_ALL)
                 else:
                     print(Fore.RED + "You have to select a role between (C) certifier, (F) farmer, (R) carrier, (S) seller, (P) producer. Retry\n" + Style.RESET_ALL)
-        
+
             while True:
                 while True:
                     password = getpass.getpass('Password: ')
@@ -177,7 +177,7 @@ class CommandLineInterface:
                     else: break
 
                 confirm_password = getpass.getpass('Confirm Password: ')
-                
+
                 if password != confirm_password:
                     print(Fore.RED + 'Password and confirmation do not match. Try again\n' + Style.RESET_ALL)
                 else:
@@ -198,10 +198,10 @@ class CommandLineInterface:
                     self.insert_actor_info(username, 'PRODUCER')
             elif reg_code == -1:
                 print(Fore.RED + 'Your username has been taken.\n' + Style.RESET_ALL)
-        
+
         else:
             print(Fore.RED + 'Sorry, but the provided public and private key do not match to any account\n' + Style.RESET_ALL)
-            return 
+            return
 
     def insert_actor_info(self, username, role):
         """
@@ -241,13 +241,13 @@ class CommandLineInterface:
             else: print(Fore.RED + "Invalid birthdate or incorrect format." + Style.RESET_ALL)
         while True:
             mail = input('E-mail: ')
-            if self.controller.check_email_format(mail): 
+            if self.controller.check_email_format(mail):
                 if self.controller.check_unique_email(mail) == 0: break
                 else: print(Fore.RED + "This e-mail has already been inserted. \n" + Style.RESET_ALL)
             else: print(Fore.RED + "Invalid e-mail format.\n" + Style.RESET_ALL)
         while True:
             phone = input('Phone number: ')
-            if self.controller.check_phone_number_format(phone): 
+            if self.controller.check_phone_number_format(phone):
                 if self.controller.check_unique_phone_number(phone) == 0: break
                 else: print(Fore.RED + "This phone number has already been inserted. \n" + Style.RESET_ALL)
             else: print(Fore.RED + "Invalid phone number format.\n" + Style.RESET_ALL)
@@ -259,19 +259,12 @@ class CommandLineInterface:
             print(Fore.GREEN + 'Information saved correctly!' + Style.RESET_ALL)
             if role == 'CERTIFIER':
                 self.certifier_menu(username)
-            """
-            elif role == 'F':
-                self.medic_menu(username)
-            elif role == 'R':
-                self.medic_menu(username)
-            elif role == 'S':
-                self.medic_menu(username)
-            elif role == 'P':
-                self.medic_menu(username)"""
-            # self.medic_menu(username) Inserire switch case per i vari ruoli 
+            else:
+                self.common_menu_options(role, username)
+            # self.medic_menu(username) Inserire switch case per i vari ruoli
         elif insert_code == -1:
             print(Fore.RED + 'Internal error!' + Style.RESET_ALL)
-    
+
     def certifier_menu(self, username):
         """
         This method presents certifier with a menu of options tailored to their role. 
@@ -284,7 +277,7 @@ class CommandLineInterface:
             username (str): The username of the logged-in certifier.
         """
 
-        medic_options = {
+        certifier_options = {
             1: "Choose patient",
             2: "View profile",
             3: "Update profile",
@@ -293,22 +286,22 @@ class CommandLineInterface:
         }
 
         while True:
-            print(Fore.CYAN + "\nMENU" + Style.RESET_ALL)                           
-            for key, value in medic_options.items():
+            print(Fore.CYAN + "\nMENU" + Style.RESET_ALL)
+            for key, value in certifier_options.items():
                 print(f"{key} -- {value}")
-                                                
-            try:                                    
+
+            try:
                 choice = int(input("Choose an option: "))
-                if choice in medic_options:
+                if choice in certifier_options:
                     if choice == 1:
                         self.util.display_records(username)
 
                     elif choice == 2:
                         self.view_certifierView(username)
 
-                    elif choice == 3:                           
+                    elif choice == 3:
                         self.util.update_profile(username, "CERTIFIER")
-                
+
                     elif choice == 4:
                         self.util.change_passwd(username)
 
@@ -346,6 +339,155 @@ class CommandLineInterface:
         print("Phone: ",certifierView.get_phone())
         input("\nPress Enter to exit\n")
 
+    def common_menu_options(self, role, username):
+        """
+        Handles menu options common to all roles with NFT-related functionalities.
+
+        Args:
+            role (str): The role of the user (FARMER, CARRIER, SELLER, PRODUCER)
+            username (str): The username of the logged-in user
+        """
+        common_options = {
+            1: "View Profile",
+            2: "Update Profile",
+            3: "Change Password",
+            4: f"{'Create' if role == 'FARMER' else 'Update'} NFT",
+            5: "Exchange NFT",
+            6: "Log out"
+        }
+
+        while True:
+            print(Fore.CYAN + f"\n{role} MENU" + Style.RESET_ALL)
+
+            # Print menu options
+            for key, value in common_options.items():
+                print(f"{key} -- {value}")
+
+            try:
+                choice = int(input("Choose an option: "))
+
+                if choice in common_options:
+                    if choice == 1:
+                        # View Profile
+                        globals()[f"view_{role.lower()}View"](self, username)
+
+                    elif choice == 2:
+                        # Update Profile
+                        self.util.update_profile(username, role)
+
+                    elif choice == 3:
+                        # Change Password
+                        self.util.change_passwd(username)
+
+                    elif choice == 4:
+                        # NFT Creation (Farmer) or NFT Update (Others)
+                        if role == "FARMER":
+                            # TODO: Implement NFT creation for Farmer
+                            print("Create NFT functionality not yet implemented")
+                        else:
+                            # TODO: Implement NFT update for other roles
+                            print("Update NFT functionality not yet implemented")
+
+                    elif choice == 5:
+                        # Exchange NFT for all roles
+                        # TODO: Implement NFT exchange functionality
+                        print("Exchange NFT functionality not yet implemented")
+
+                    elif choice == 6:
+                        # Log out
+                        confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
+                        if confirm == 'Y':
+                            print(Fore.CYAN + "\nThank you for using the service!\n" + Style.RESET_ALL)
+                            self.session.reset_session()
+                            return
+                        else:
+                            print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
+
+                else:
+                    print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
+
+            except ValueError:
+                print(Fore.RED + "Invalid Input! Please enter a valid number." + Style.RESET_ALL)
+
+    def view_farmerView(self, username):
+        """
+        Retrieves and displays the profile information of the farmer.
+
+        Args:
+            username (str): The username of the farmer whose profile is to be viewed.
+        """
+        farmerView = self.controller.get_user_by_username(username)
+        print(Fore.CYAN + "\nFARMER INFO\n" + Style.RESET_ALL)
+        print("Username: ", farmerView.get_username())
+        print("Name: ", farmerView.get_name())
+        print("Lastname: ", farmerView.get_lastname())
+        print("License: ", farmerView.get_licence_id())
+        print("Birthday: ", farmerView.get_birthday())
+        print("Birthday place: ", farmerView.get_birth_place())
+        print("Residence: ", farmerView.get_residence())
+        print("E-mail: ", farmerView.get_mail())
+        print("Phone: ", farmerView.get_phone())
+        input("\nPress Enter to exit\n")
+
+    def view_carrierView(self, username):
+        """
+        Retrieves and displays the profile information of the carrier.
+
+        Args:
+            username (str): The username of the carrier whose profile is to be viewed.
+        """
+        carrierView = self.controller.get_user_by_username(username)
+        print(Fore.CYAN + "\nCARRIER INFO\n" + Style.RESET_ALL)
+        print("Username: ", carrierView.get_username())
+        print("Name: ", carrierView.get_name())
+        print("Lastname: ", carrierView.get_lastname())
+        print("License: ", carrierView.get_licence_id())
+        print("Birthday: ", carrierView.get_birthday())
+        print("Birthday place: ", carrierView.get_birth_place())
+        print("Residence: ", carrierView.get_residence())
+        print("E-mail: ", carrierView.get_mail())
+        print("Phone: ", carrierView.get_phone())
+        input("\nPress Enter to exit\n")
+
+    def view_sellerView(self, username):
+        """
+        Retrieves and displays the profile information of the seller.
+
+        Args:
+            username (str): The username of the seller whose profile is to be viewed.
+        """
+        sellerView = self.controller.get_user_by_username(username)
+        print(Fore.CYAN + "\nSELLER INFO\n" + Style.RESET_ALL)
+        print("Username: ", sellerView.get_username())
+        print("Name: ", sellerView.get_name())
+        print("Lastname: ", sellerView.get_lastname())
+        print("License: ", sellerView.get_licence_id())
+        print("Birthday: ", sellerView.get_birthday())
+        print("Birthday place: ", sellerView.get_birth_place())
+        print("Residence: ", sellerView.get_residence())
+        print("E-mail: ", sellerView.get_mail())
+        print("Phone: ", sellerView.get_phone())
+        input("\nPress Enter to exit\n")
+
+    def view_producerView(self, username):
+        """
+        Retrieves and displays the profile information of the producer.
+
+        Args:
+            username (str): The username of the producer whose profile is to be viewed.
+        """
+        producerView = self.controller.get_user_by_username(username)
+        print(Fore.CYAN + "\nPRODUCER INFO\n" + Style.RESET_ALL)
+        print("Username: ", producerView.get_username())
+        print("Name: ", producerView.get_name())
+        print("Lastname: ", producerView.get_lastname())
+        print("License: ", producerView.get_licence_id())
+        print("Birthday: ", producerView.get_birthday())
+        print("Birthday place: ", producerView.get_birth_place())
+        print("Residence: ", producerView.get_residence())
+        print("E-mail: ", producerView.get_mail())
+        print("Phone: ", producerView.get_phone())
+        input("\nPress Enter to exit\n")
 
 
 if __name__ == "__main__":
