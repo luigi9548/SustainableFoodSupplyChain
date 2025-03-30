@@ -56,12 +56,12 @@ class Controller:
         insertion_code = self.db_ops.insert_actor(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
 
         if insertion_code == 0:
-            user = self.get_user_by_username(username) 
+            user = self.get_user_by_username(username)
             self.session.set_user(user)
             print(Fore.GREEN + 'DONE' + Style.RESET_ALL)
 
         return insertion_code
-    
+
     def check_null_info(self, info):
         """
         Checks if the provided information is non-null (or truthy).
@@ -121,7 +121,7 @@ class Controller:
 
     def check_unique_phone_number(self, phone):
         return self.db_ops.check_unique_phone_number(phone)
-    
+
     def check_unique_email(self, mail):
         return self.db_ops.check_unique_email(mail)
 
@@ -140,3 +140,17 @@ class Controller:
     def update_actor_info(self, user):
         return self.db_ops.update_account(user.get_username(), user.get_name(), user.get_lastname(),  user.get_birthday(), user.get_birth_place(), user.get_residence(),
                                          user.get_phone(), user.get_mail(), user.get_id())
+
+    def get_activities_to_be_processed(self):
+        return self.db_ops.get_activities_to_be_processed()
+
+    def get_activities_by_username(self, username):
+        return self.db_ops.get_activities_by_username(username)
+
+    def get_users(self):
+        return self.db_ops.get_users()
+
+    def create_product(self, name, category, co2Emission, sensorId):
+        return self.db_ops.insert_product(name, category, co2Emission, sensorId)
+
+    #def update_product(self, )

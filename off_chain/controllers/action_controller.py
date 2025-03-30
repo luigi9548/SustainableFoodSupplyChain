@@ -1,4 +1,4 @@
-import os
+﻿import os
 import time
 import json
 from colorama import Fore, Style, init
@@ -64,7 +64,7 @@ class ActionController:
                         log_error(f"Invalid data in files for contract '{contract_name}'. Please check the files.")
                 else:
                     log_error(f"Missing files for contract '{contract_name}'. Expected {contract_name}_address.txt and {contract_name}_abi.json.")
-        
+
             if not self.contracts:
                 log_error("No valid contracts found. Deploy contracts first.")
                 print(Fore.RED + "No valid contracts found. Deploy contracts first." + Style.RESET_ALL)
@@ -264,3 +264,46 @@ class ActionController:
         if not function_name:
             raise ValueError(Fore.RED + f"No function available for entity type {entity_type}" + Style.RESET_ALL)
         return self.write_data(function_name, contract_name, from_address, *args)
+
+    def create_nft(self, *args, from_address, contract_name='SupplyChainNFT'):
+        """
+        Mints a new NFT by calling the mint function in the smart contract.
+
+        Args:
+            *args: Additional arguments required by the contract function.
+            from_address (str): Ethereum address of the sender.
+            contract_name (str): Name of the contract (default is 'SupplyChainNFT').
+
+        Returns:
+            dict: Transaction receipt.
+    
+        Raises:
+            ValueError: If any required parameter is missing.
+        """
+        if not from_address:
+            raise ValueError(Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
+        """if not to_address:
+            raise ValueError(Fore.RED + "A valid recipient address ('to_address') must be provided." + Style.RESET_ALL)
+        """
+        owner_address = self.contracts[contract_name].functions.getOwner().call()
+        tx_hash = self.contracts[contract_name].functions.authorizeEditor(from_address).transact({'from': owner_address})
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        return self.write_data(function_name="mint",
+                               contract_name=contract_name,
+                               *args,
+                               from_address=from_address)
+
+    def update_nft(self, *args, from_address, contract_name='SupplyChainNFT'):
+
+        if not from_address:
+            raise ValueError(Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
+
+        owner_address = self.contracts[contract_name].functions.getOwner().call()
+        tx_hash = self.contracts[contract_name].functions.authorizeEditor(from_address).transact({'from': owner_address})
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        return self.write_data(function_name="updateNFT",
+                               contract_name=contract_name,
+                               *args,
+                               from_address=from_address)
