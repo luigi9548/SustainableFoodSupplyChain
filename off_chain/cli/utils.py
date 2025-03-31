@@ -172,14 +172,14 @@ class Utils:
         else:
             print("No activities to be processed.\n")
 
-    def view_userActivities(self, username):
+    def view_userActivities(self, username, activities):
         """
         This method retrieves and displays the activities of the current user.
 
         Args:
             username (str): The username of the user whose activities are to be viewed.
+            activities (list): A list of activities to be displayed.
         """
-        activities = self.controller.get_activities_by_username(username)
         print(Fore.CYAN + username + " activities:" + Style.RESET_ALL)
         print("\n")
         if activities:
@@ -193,3 +193,17 @@ class Utils:
                 print("\n")
         else:
             print("No activities found.\n")
+
+    def assign_carbon_credits(self, username, activity_id, from_address_actor):
+        """
+        This method assigns carbon credits to users based on their activities.
+
+        Args:
+            username (str): The username of the user to whom carbon credits are to be assigned.
+            activity_id (int): The ID of the activity for which carbon credits are to be assigned.
+            from_address_actor (str): The public key of the actor assigning the carbon credits.
+        """
+        address_to = self.controller.get_public_key_by_username(username)
+        co2Amount = self.controller.get_co2Amount_by_activity(activity_id)
+        co2AmountConverted = round(co2Amount)
+        self.act_controller.assign_carbon_credits(address_to, co2AmountConverted, from_address=from_address_actor)

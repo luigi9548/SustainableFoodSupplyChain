@@ -777,3 +777,22 @@ class DatabaseOperations:
                       for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
         
         return activities
+
+    def get_activities_to_be_processed_by_username(self, username):
+        """
+        Retrieves all activities to be elaborated for a given username.
+        """
+        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ? AND state = 0", (username,))
+
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
+                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
+        
+        return activities
+
+    def get_co2Amount_by_activity(self, activity_id):
+        """
+        Retrieves the total amount of CO2 reduced by all activities.
+        """
+        co2Amount = self.cur.execute(
+            "SELECT co2_reduction FROM Cron_Activities WHERE activity_id = ?", (activity_id,)).fetchone()
+        return co2Amount[0] if co2Amount else None

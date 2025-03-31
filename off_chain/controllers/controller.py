@@ -149,3 +149,9 @@ class Controller:
 
     def get_users(self):
         return self.db_ops.get_users()
+
+    def get_activities_to_be_processed_by_username(self, username):
+        return self.db_ops.get_activities_to_be_processed_by_username(username)
+
+    def get_co2Amount_by_activity(self, activity_id):
+        return self.db_ops.get_co2Amount_by_activity(activity_id)

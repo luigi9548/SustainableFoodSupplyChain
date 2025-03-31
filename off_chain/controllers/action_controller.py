@@ -264,3 +264,19 @@ class ActionController:
         if not function_name:
             raise ValueError(Fore.RED + f"No function available for entity type {entity_type}" + Style.RESET_ALL)
         return self.write_data(function_name, contract_name, from_address, *args)
+
+    def assign_carbon_credits(self, *args, from_address, contract_name = 'CarbonCreditToken'):
+        """
+        Assigns carbon credits to a user.
+        Args:
+            *args: Additional arguments required by the contract function.
+            from_address (str): The Ethereum address to send the transaction from.
+            contract_name (str): The name of the contract to use. Default is 'CarbonCreditToken'.
+        Returns:
+            The transaction receipt object.
+        """
+        owner_address = self.contracts[contract_name].functions.getOwner().call()
+        tx_hash = self.contracts[contract_name].functions.authorizeEditor(from_address).transact({'from': owner_address})
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        return self.write_data('mint', contract_name, from_address, *args)

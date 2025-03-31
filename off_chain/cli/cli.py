@@ -311,10 +311,28 @@ class CommandLineInterface:
 
                     elif choice == 2:
                         username = input("Enter the username of the user whose activities you want to view: ")
-                        self.util.view_userActivities(username)
+                        activities = self.controller.get_activities_by_username(username)
+                        self.util.view_userActivities(username, activities)
 
                     elif choice == 3:
                         self.util.view_usersView()
+
+                    elif choice == 6:
+                        username = input("Enter the username of the user you want to assign carbon credits : ")
+                        activities = self.controller.get_activities_to_be_processed_by_username(username)
+                        if not activities:
+                            print(Fore.RED + "No activities found for this user." + Style.RESET_ALL)
+                            continue
+                        self.util.view_userActivities(username, activities)
+                        activity_id = input("Enter the activity ID you want to assign carbon credits to: ")
+                        msg = "Do you really want to assign carbon credits to activity ID " + activity_id + " ? (Y/n): "
+                        confirm = input(msg).strip().upper()
+                        if confirm == 'Y':
+                            from_address_actor = self.controller.get_public_key_by_username(self.session.get_user().get_username())
+                            self.util.assign_carbon_credits(username, activity_id, from_address_actor)
+                            print(Fore.GREEN + "Assignment completed!" + Style.RESET_ALL)
+                        else:
+                            print(Fore.RED + "Operation cancelled!" + Style.RESET_ALL)
 
                     elif choice == 4:
                         username = input("Enter the username of the user whose profile you want to view: ")
