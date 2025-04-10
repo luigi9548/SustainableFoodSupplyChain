@@ -212,13 +212,12 @@ class Utils:
             if self.controller.check_null_info(category): break
             else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
 
-        emissions = random.randint(1,100) 
-        quality_score = random.randint(1,100) 
-        sensor_id = random.randint(1,1000) 
+        emissions = random.randint(1,100)
+        quality_score = random.randint(1,100)
         role = "Farmer"
         harvest_date = self.today_date
-        #DA VEDERE!
-        """from_address = self.controller.get_public_key_by_username(username)
+
+        from_address = self.controller.get_public_key_by_username(username)
         to_address = self.controller.get_public_key_by_username(username)
 
         # Chiamata alla funzione che interagisce con lo smart contract
@@ -230,12 +229,11 @@ class Utils:
             emissions,
             quality_score,
             harvest_date,
-            sensor_id,
             from_address=from_address
-        )"""
+        )
 
         result = self.controller.create_product(name, category, emissions,
-                                                harvest_date, sensor_id)
+                                                harvest_date)
 
         if result == 0:
             print(Fore.GREEN + 'Product created correctly!\n' + Style.RESET_ALL)
@@ -260,15 +258,15 @@ class Utils:
             else:
                 print(Fore.RED + 'Invalid input. Enter a positive numeric value.' + Style.RESET_ALL)
         from_address = self.controller.get_public_key_by_username(username)
-        emissions = random.randint(1,100) 
+        emissions = random.randint(1,100)
 
         # Chiamata alla funzione che interagisce con lo smart contract
         self.act_controller.update_nft(nft_id, emissions, from_address)
-        
-        """result = self.controller.update_product(.....)
+
+        result = self.controller.update_product(nft_id, emissions)
+        #queste mission non sono i totale ma solo quelle del singolo attore 
 
         if result == 0:
             print(Fore.GREEN + 'Product created correctly!\n' + Style.RESET_ALL)
         else:
-            print(Fore.RED + 'Error creating information!\n' + Style.RESET_ALL)"""
-    
+            print(Fore.RED + 'Error creating information!\n' + Style.RESET_ALL)

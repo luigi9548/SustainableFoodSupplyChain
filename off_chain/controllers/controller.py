@@ -150,7 +150,7 @@ class Controller:
     def get_users(self):
         return self.db_ops.get_users()
 
-    def create_product(self, name, category, co2Emission, sensorId):
-        return self.db_ops.insert_product(name, category, co2Emission, sensorId)
+    def create_product(self, name, category, co2Emission):
+        return self.db_ops.insert_product(name, category, co2Emission)
 
     #def update_product(self, )

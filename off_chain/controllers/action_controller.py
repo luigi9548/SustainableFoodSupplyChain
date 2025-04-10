@@ -271,7 +271,7 @@ class ActionController:
 
         Args:
             *args: Additional arguments required by the contract function.
-            from_address (str): Ethereum address of the sender.
+            from_address (str): The Ethereum address to send the transaction from.
             contract_name (str): Name of the contract (default is 'SupplyChainNFT').
 
         Returns:
@@ -295,7 +295,21 @@ class ActionController:
                                from_address=from_address)
 
     def update_nft(self, *args, from_address, contract_name='SupplyChainNFT'):
+        """
+        Updates an existing NFT on the blockchain by calling the 'updateNFT' function
+        in the SupplyChainNFT smart contract.
 
+        Args:
+            *args: Arguments required by the updateNFT function.
+            from_address (str): The Ethereum address to send the transaction from.
+            contract_name (str): Name of the smart contract (default is 'SupplyChainNFT').
+
+        Returns:
+            dict: Transaction receipt of the update operation.
+
+        Raises:
+            ValueError: If 'from_address' is not provided.
+        """
         if not from_address:
             raise ValueError(Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
 

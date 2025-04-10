@@ -20,7 +20,6 @@ contract SupplyChainNFT is ERC721, Ownable {
      * @param co2Emission // CO₂ emissions in Kg
      * @param qualityScore // Quality score of the product
      * @param harvestDate // Harvest or production date (Unix timestamp)
-     * @param sensorId // ID of the sensor that recorded the data
      */
     struct NFT {
         uint256 id;
@@ -31,7 +30,6 @@ contract SupplyChainNFT is ERC721, Ownable {
         uint256 co2Emission;
         uint256 qualityScore;
         uint256 harvestDate;
-        uint256 sensorId;
     }
 
     //Struct to log actions for every previous struct
@@ -71,12 +69,11 @@ contract SupplyChainNFT is ERC721, Ownable {
      * @param emissions Carbon emissions of the product
      * @param qualityScore // Quality score of the product
      * @param harvestDate // Harvest or production date (Unix timestamp)
-     * @param sensorId // ID of the sensor that recorded the data
      */
-    function mint(address to, string memory role, string memory name, string memory category, uint256 emissions, uint256 qualityScore, uint256 harvestDate, uint256 sensorId) external onlyOwner {
+    function mint(address to, string memory role, string memory name, string memory category, uint256 emissions, uint256 qualityScore, uint256 harvestDate) external onlyOwner {
         uint256 tokenId = nextTokenId++;
         _safeMint(to, tokenId);
-        nfts[tokenId] = NFT(tokenId, to, role, name, category, emissions, qualityScore, harvestDate, sensorId);
+        nfts[tokenId] = NFT(tokenId, to, role, name, category, emissions, qualityScore, harvestDate);
         userRoles[to] = role;
 
         logAction("Mint", msg.sender, "New NFT minted");

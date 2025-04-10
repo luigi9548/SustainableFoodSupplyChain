@@ -104,8 +104,16 @@ cur.execute('''CREATE TABLE Products (
             category TEXT CHECK(category IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
             co2Emission INTEGER NOT NULL,
             harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            sensorId INTEGER NOT NULL
+            update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             );''')
+
+# trigger for automatic update of update_datetime
+cur.execute('''CREATE TRIGGER IF NOT EXISTS update_Products_timestamp
+                        AFTER UPDATE ON Products
+                        FOR EACH ROW
+                        BEGIN
+                        UPDATE Products SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                        END;''')
 
 # Inserting 10 random licences for each role except 'CERTIFICATORE'
 # (per mitigare disuso e abuso verranne inviate via mail le licenze ad ogni certificatore, mi occupo io della cosa e di correggere la relazione)

@@ -125,8 +125,17 @@ class DatabaseOperations:
                         category TEXT CHECK(category IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
                         co2Emission INTEGER NOT NULL,
                         harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        sensorId INTEGER NOT NULL
+                        update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
                         );''')
+
+        # trigger for automatic update of update_datetime
+        self.cur.execute('''CREATE TRIGGER IF NOT EXISTS update_Products_timestamp
+                        AFTER UPDATE ON Products
+                        FOR EACH ROW
+                        BEGIN
+                        UPDATE Products SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
+                        END;''')
+
         self.conn.commit()
 
     def insert_test_records(self):
@@ -157,10 +166,10 @@ class DatabaseOperations:
                             ('Solar panel investment', 'farmer_user', 0, 1, 50.0),
                             ('Electric vehicle implementation', 'carrier_user', 0, 2, 30.5);''')
 
-        self.cur.execute('''INSERT INTO Products (name, category, co2Emission, sensorId) VALUES
-                            ('Apple', 'FRUIT', 10, 101),
-                            ('Beef', 'MEAT', 50, 102),
-                            ('Cheese', 'DAIRY', 20, 103);''')
+        self.cur.execute('''INSERT INTO Products (name, category, co2Emission) VALUES
+                            ('Apple', 'FRUIT', 10),
+                            ('Beef', 'MEAT', 50),
+                            ('Cheese', 'DAIRY', 20);''')
 
         self.conn.commit()
 
@@ -486,8 +495,7 @@ class DatabaseOperations:
           self.conn.commit()
           return 0
         except sqlite3.IntegrityError:
-          return -1
-        
+          return -1      
     
     def update_account_activities(self, record_id, account_id, activity_id):
         """
@@ -634,15 +642,45 @@ class DatabaseOperations:
             print(Fore.RED + f'Error deleting cron activity: {e}' + Style.RESET_ALL)
             return -1
 
-    def insert_product(self, name, category, co2Emission, sensorId):
+    def insert_product(self, name, category, co2Emission):
         try:
             self.cur.execute("""
-                INSERT INTO Products (name, category, co2Emission, harvestDate, sensorId)
-                VALUES (?, ?, ?, ?, ?)""",
-                (name, category, co2Emission, self.today_date, sensorId))
+                INSERT INTO Products (name, category, co2Emission, harvestDate)
+                VALUES (?, ?, ?, ?)""",
+                (name, category, co2Emission, self.today_date))
             self.conn.commit()
             return 0
         except sqlite3.IntegrityError:
+            return -1
+
+    def update_product(self, product_id, co2Emission=None):
+        """
+        Updates the details of an existing product in the Products table.
+        """
+        try:
+           query = "UPDATE Products SET "
+           params = []
+
+           if co2Emission is not None:
+               query += "co2Emission = ?, "
+               params.append(co2Emission)
+                
+           # Rimuove la virgola finale e aggiunge la WHERE
+           query = query.rstrip(", ") + " WHERE id = ?"
+           params.append(product_id)
+
+           self.cur.execute(query, params)
+           self.conn.commit()
+
+           if self.cur.rowcount > 0:
+               print(Fore.GREEN + "Product emissions/sensor updated successfully!\n" + Style.RESET_ALL)
+               return 0
+           else:
+               print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
+               return -1
+
+        except sqlite3.Error as e:
+            print(Fore.RED + f"Error updating product: {e}" + Style.RESET_ALL)
             return -1
 
     def encrypt_private_k(self, private_key, passwd):
