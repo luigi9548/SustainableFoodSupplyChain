@@ -645,9 +645,9 @@ class DatabaseOperations:
     def insert_product(self, name, category, co2Emission):
         try:
             self.cur.execute("""
-                INSERT INTO Products (name, category, co2Emission, harvestDate)
-                VALUES (?, ?, ?, ?)""",
-                (name, category, co2Emission, self.today_date))
+                INSERT INTO Products (name, category, co2Emission)
+                VALUES (?, ?, ?)""",
+                (name, category, co2Emission))
             self.conn.commit()
             return 0
         except sqlite3.IntegrityError:

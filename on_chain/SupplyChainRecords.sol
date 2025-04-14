@@ -8,7 +8,7 @@ pragma solidity ^0.8.20;
  * @notice This contract is intended for demonstration purposes and not for production use.
  */
 
- contract SuuplyChainRecords {
+ contract SuplyChainRecords {
 
     // Declaration of carbon credit
     //ICarbonCreditToken public carbonCreditToken;

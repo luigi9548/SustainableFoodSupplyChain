@@ -22,18 +22,17 @@ class Controller:
         self.__n_attempts_limit = 5 # Maximum number of login attempts before lockout.
         self.__timeout_timer = 180 # Timeout duration in seconds.
 
-    def registration(self, username: str, password: str, role: str, public_key: str, private_key: str):
+    def registration(self, username: str, password: str, public_key: str, private_key: str):
         """
         Registers a new user in the database with the given credentials.
         
         :param username: The user's username.
         :param password: The user's password.
-        :param role: The user's role in the system.
         :param public_key: The user's public key.
         :param private_key: The user's private key.
         :return: A registration code indicating success or failure.
         """
-        registration_code = self.db_ops.register_creds(username, password, role, public_key, private_key)
+        registration_code = self.db_ops.register_creds(username, password, public_key, private_key)
 
         return registration_code
 
@@ -153,4 +152,5 @@ class Controller:
     def create_product(self, name, category, co2Emission):
         return self.db_ops.insert_product(name, category, co2Emission)
 
-    #def update_product(self, )
+    def update_product(self, product_id, co2Emission):
+        return self.db_ops.update_product(product_id, co2Emission)

@@ -1,4 +1,4 @@
-import maskpass
+﻿import maskpass
 import re
 from eth_utils import *
 from eth_keys import *
@@ -37,13 +37,13 @@ class CommandLineInterface:
     def print_menu(self):
         """Displays the menu and handles user choices."""
         print(Fore.CYAN + r"""
- ______     _____     __     ______     __  __     ______     __     __   __       
-/\  __ \   /\  __-.  /\ \   /\  ___\   /\ \_\ \   /\  __ \   /\ \   /\ "-.\ \      
-\ \  __ \  \ \ \/\ \ \ \ \  \ \ \____  \ \  __ \  \ \  __ \  \ \ \  \ \ \-.  \     
- \ \_\ \_\  \ \____-  \ \_\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\  \ \_\\"\_\    
-  \/_/\/_/   \/____/   \/_/   \/_____/   \/_/\/_/   \/_/\/_/   \/_/   \/_/ \/_/   
-""" + Style.RESET_ALL)
-
+     ███████╗██╗   ██╗██████╗ ██████╗ ██╗  ██╗   ██╗ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗
+     ██╔════╝██║   ██║██╔══██╗██╔══██╗██║  ╚██╗ ██╔╝██╔════╝██║  ██║██╔══██╗██║████╗  ██║
+     ███████╗██║   ██║██████╔╝██████╔╝██║   ╚████╔╝ ██║     ███████║███████║██║██╔██╗ ██║
+     ╚════██║██║   ██║██╔═══╝ ██╔═══╝ ██║    ╚██╔╝  ██║     ██╔══██║██╔══██║██║██║╚██╗██║
+     ███████║╚██████╔╝██║     ██║     ███████╗██║   ╚██████╗██║  ██║██║  ██║██║██║ ╚████║
+     ╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
+    """ + Style.RESET_ALL)
         for key, value in self.menu.items():
             print(key, '--', value)
 
@@ -183,7 +183,7 @@ class CommandLineInterface:
                 else:
                     break
 
-            reg_code = self.controller.registration(username, password, user_role, public_key, private_key)
+            reg_code = self.controller.registration(username, password, public_key, private_key)
             if reg_code == 0:
                 print(Fore.GREEN + 'You have succesfully registered!\n' + Style.RESET_ALL)
                 if role == 'C':
@@ -336,7 +336,6 @@ class CommandLineInterface:
     def common_menu_options(self, role, username):
         """
         Handles menu options common to all roles with NFT-related functionalities.
-
         Args:
             role (str): The role of the user (FARMER, CARRIER, SELLER, PRODUCER)
             username (str): The username of the logged-in user
@@ -346,46 +345,40 @@ class CommandLineInterface:
             2: "Update Profile",
             3: "Change Password",
             4: f"{'Create' if role == 'FARMER' else 'Update'} NFT",
-            5: "Exchange NFT",
-            6: "Log out"
+            5: "View My NFTs",
+            6: "Exchange NFT",
+            7: "Log out"
         }
-
         while True:
             print(Fore.CYAN + f"\n{role} MENU" + Style.RESET_ALL)
-
             # Print menu options
             for key, value in common_options.items():
                 print(f"{key} -- {value}")
-
             try:
                 choice = int(input("Choose an option: "))
-
                 if choice in common_options:
                     if choice == 1:
                         # View Profile
                         self.util.view_userView(username, f"\n{role} INFO\n")
-
                     elif choice == 2:
                         # Update Profile
                         self.util.update_profile(username, role)
-
                     elif choice == 3:
                         # Change Password
                         self.util.change_passwd(username)
-
                     elif choice == 4:
                         # NFT Creation (Farmer) or NFT Update (Others)
                         if role == "FARMER":
                             self.util.create_nft(username)
                         else:
                             self.util.update_nft(username)
-
                     elif choice == 5:
-                        # Exchange NFT for all roles
-                        # TODO: Implement NFT exchange functionality
-                        print("Exchange NFT functionality not yet implemented")
-
+                        # View user's NFTs
+                        self.util.display_user_nfts(username)
                     elif choice == 6:
+                        # Exchange NFT for all roles
+                        self.util.transfer_nft(username, role)
+                    elif choice == 7:
                         # Log out
                         confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
                         if confirm == 'Y':
@@ -393,11 +386,11 @@ class CommandLineInterface:
                             self.session.reset_session()
                             return
                         else:
-                            print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
-
+                            print("Logout cancelled.")
+                    else:
+                        print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
                 else:
                     print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
-
             except ValueError:
                 print(Fore.RED + "Invalid Input! Please enter a valid number." + Style.RESET_ALL)
 

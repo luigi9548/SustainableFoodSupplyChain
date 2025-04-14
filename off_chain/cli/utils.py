@@ -197,7 +197,7 @@ class Utils:
         else:
             print("No activities found.\n")
 
-    def createNFT(self, username):
+    def create_nft(self, username):
         """
         Collects NFT data from the user and mints a new NFT.
         """
@@ -207,14 +207,20 @@ class Utils:
             name = input("Product Name: ").strip()
             if self.controller.check_null_info(name): break
             else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
-        while True:
+        """while True:
             category = input("Product Category (Fruit, Meat, Dairy): ").strip()
             if self.controller.check_null_info(category): break
-            else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
+            else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)"""
+        while True:
+            category = click.prompt("Product category (FRUIT / MEAT / DAIRY)").upper()
+            if category in ["FRUIT", "MEAT", "DAIRY"]:
+                break
+            else:
+                print(Fore.RED + "Invalid category. Choose one of: FRUIT, MEAT, DAIRY" + Style.RESET_ALL)
 
         emissions = random.randint(1,100)
         quality_score = random.randint(1,100)
-        role = "Farmer"
+        role = "FARMER"
         harvest_date = self.today_date
 
         from_address = self.controller.get_public_key_by_username(username)
@@ -228,12 +234,11 @@ class Utils:
             category,
             emissions,
             quality_score,
-            harvest_date,
+            int(datetime.datetime.strptime(harvest_date, "%Y-%m-%d").timestamp()),
             from_address=from_address
         )
 
-        result = self.controller.create_product(name, category, emissions,
-                                                harvest_date)
+        result = self.controller.create_product(name, category, emissions)
 
         if result == 0:
             print(Fore.GREEN + 'Product created correctly!\n' + Style.RESET_ALL)
@@ -263,10 +268,93 @@ class Utils:
         # Chiamata alla funzione che interagisce con lo smart contract
         self.act_controller.update_nft(nft_id, emissions, from_address)
 
-        result = self.controller.update_product(nft_id, emissions)
-        #queste mission non sono i totale ma solo quelle del singolo attore 
+        emissionsTot = self.act_controller.get_emissions_by_nft_id(nft_id)
+        result = self.controller.update_product(nft_id, emissionsTot)
 
         if result == 0:
             print(Fore.GREEN + 'Product created correctly!\n' + Style.RESET_ALL)
         else:
             print(Fore.RED + 'Error creating information!\n' + Style.RESET_ALL)
+
+    def transfer_nft(self, username, role):
+        """
+        Transfers an NFT from one user to another.
+        Args:
+            username (str): The username of the user performing the transfer.
+            role (str): The role of the user performing the transfer.
+        Returns:
+            dict: Transaction receipt if successful, else an error message.
+        """
+        while True:
+            nft_id = input("ID ntf to transfer: ").strip()
+            if nft_id.isdigit() and int(nft_id) >= 0:
+                nft_id = int(nft_id)
+                break
+            else:
+                print(Fore.RED +
+                      'Invalid input. Enter a positive numeric value.' +
+                      Style.RESET_ALL)
+
+        while True:
+            to_username = input("Username of the new owner: ").strip()
+            if not self.controller.check_null_info(to_username):
+                print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
+                continue
+
+            to_user = self.controller.get_user_by_username(to_username)
+            if to_user:
+                break
+            else:
+                print(Fore.RED + '\nNo user found with this username.' + Style.RESET_ALL)
+
+        to_address = self.controller.get_public_key_by_username(to_username)
+        to_role = to_user.type
+        from_address = self.controller.get_public_key_by_username(username)
+
+        proceed = input(f"Do you want to transfer the NFT from {role} to {to_role}? (Y/n): ")
+        if proceed.strip().upper() == "Y":
+            # Chiamata alla funzione che interagisce con lo smart contract
+            receipt = self.act_controller.transfer_nft(nft_id, to_address, to_role, from_address)
+            if receipt.get('status') == 1:
+                print(Fore.GREEN + 'Product transferred correctly!\n' +
+                      Style.RESET_ALL)
+            else:
+                print(Fore.RED + 'Error transferring product!\n' + Style.RESET_ALL)
+        else:
+            print("NFT transfer canceled.")
+
+    def display_user_nfts(self, username):
+        """
+        Retrieves and displays all NFTs owned by a specific user.
+    
+        Args:
+            username (str): The username of the owner whose NFTs will be displayed.
+        """
+        # Get the user's Ethereum address from their username
+        user_address = self.controller.get_public_key_by_username(username)
+
+        if not user_address:
+            print(Fore.RED + f"Could not find address for user: {username}" + Style.RESET_ALL)
+            return
+
+        # Call the action controller to get the NFT data
+        nft_data = self.act_controller.get_nft_data_by_owner(user_address)
+        ids, names, categories, emissions, scores, harvests = nft_data
+
+        # Display the NFTs in a formatted table
+        if len(ids) == 0:
+            print(Fore.YELLOW + f"User {username} does not own any NFTs." + Style.RESET_ALL)
+            return
+
+        print(Fore.GREEN + f"\nNFTs owned by {username} (address: {user_address}):" + Style.RESET_ALL)
+        print("-" * 82)
+        print(f"{'ID':<5} {'Name':<15} {'Category':<15} {'CO2 Emission':<15} {'Quality Score':<15} {'Harvest Date':<15}")
+        print("-" * 82)
+
+        for i in range(len(ids)):
+            # Convert harvest date from Unix timestamp to readable format if needed
+            harvest_date = datetime.datetime.fromtimestamp(harvests[i]).strftime('%Y-%m-%d') if harvests[i] > 0 else "N/A"
+
+            print(f"{ids[i]:<5} {names[i]:<15} {categories[i]:<15} {emissions[i]:<15} {scores[i]:<15} {harvest_date:<15}")
+
+        print("-" * 82)
