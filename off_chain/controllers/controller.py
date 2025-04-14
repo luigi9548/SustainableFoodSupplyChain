@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from tkinter import SE
 from colorama import Fore, Style, init
 from db.db_operations import DatabaseOperations
 from session.session import Session
@@ -154,3 +155,12 @@ class Controller:
 
     def update_product(self, product_id, co2Emission):
         return self.db_ops.update_product(product_id, co2Emission)
+
+    def update_password(self, username, password):
+        return self.db_ops.update_creds(username=username, password=password)
+
+    def check_credentials(self, username, password):
+        return self.db_ops.check_credentials(username=username, password=password)
+
+    def update_password(self, username, password):
+        return self.db_ops.change_password(username, password)

@@ -190,7 +190,7 @@ class DatabaseOperations:
             print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL)
             return -1
         
-    def update_creds(self, id, username=None, password=None, role=None, public_key=None, private_key=None, temp_code=None, temp_code_validity=None):
+    def update_creds(self, id, username=None, password=None, public_key=None, private_key=None, temp_code=None, temp_code_validity=None):
         """
         Updates an existing credentials record in the database.
         Only updates fields that are provided (non-None).
@@ -207,11 +207,7 @@ class DatabaseOperations:
                 hashed_passwd = self.hash_function(password)
                 query += "password = ?, "
                 params.append(hashed_passwd)
-            
-            if role:
-                query += "role = ?, "
-                params.append(role)
-            
+                        
             if public_key:
                 query += "public_key = ?, "
                 params.append(public_key)
@@ -709,8 +705,8 @@ class DatabaseOperations:
             return hashed_passwd.hex() == params[0]
         return False
 
-    def change_password(self, username, old_pass, new_pass):
-        if self.check_credentials(username, old_pass):
+    def change_password(self, username, new_pass):
+        #if self.check_credentials(username, old_pass): #secondo me non ha senso farlo due volte quindi lo levo
             new_hash = self.hash_function(new_pass)
             try:
                 self.cur.execute("UPDATE Credentials SET password = ? WHERE username = ?", (new_hash, username))
@@ -718,7 +714,7 @@ class DatabaseOperations:
                 return 0
             except Exception:
                 return -1
-        return -1
+        #return -1
 
     def key_exists(self, public_key, private_key):
         """

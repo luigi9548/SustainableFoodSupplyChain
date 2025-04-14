@@ -14,6 +14,7 @@ import random
 from colorama import Fore, Style, init
 from rich.console import Console
 from rich.table import Table
+import maskpass
 
 from controllers.controller import Controller
 from controllers.action_controller import ActionController
@@ -109,6 +110,46 @@ class Utils:
         else:
             print(Fore.RED + 'Error saving information!\n' + Style.RESET_ALL)
 
+    def change_passwd(self, username):
+        """
+        Allows the user to change their password.
+
+        Args:
+            username (str): The username of the user whose password is being changed.
+
+        Returns:
+            None
+        """
+        while True:
+            confirmation = input("Do you want to change your password (Y/n): ").strip().upper()
+            if confirmation == 'Y':
+                while True:
+                    old_pass = maskpass.askpass('Old Password: ', mask="*")
+                    if not self.controller.check_credentials(username, old_pass):
+                        print(Fore.RED + '\nYou entered the wrong old password.\n' + Style.RESET_ALL)
+                        continue
+                    else:
+                        while True:
+                            new_passwd = maskpass.askpass('New password: ', mask="*")
+                            new_confirm_password = maskpass.askpass('Confirm new password: ', mask="*")
+
+                            passwd_regex = r'^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!?])(?!.*\s).{8,100}$'
+                            if not re.fullmatch(passwd_regex, new_passwd):
+                                print(Fore.RED + 'Password must contain at least 8 characters, at least one digit, at least one uppercase letter, one lowercase letter, and at least one special character.\n' + Style.RESET_ALL)    
+                            elif new_passwd != new_confirm_password:
+                                print(Fore.RED + 'Password and confirmation do not match. Try again\n' + Style.RESET_ALL)
+                            else:
+                                response = self.controller.update_password(username, new_passwd)
+                                if response == 0:
+                                    print(Fore.GREEN + '\nPassword changed correctly!\n' + Style.RESET_ALL)
+                                elif response == -1 or response == -2:
+                                    print(Fore.RED + '\nSorry, something went wrong!\n' + Style.RESET_ALL)
+                                break
+                        break
+            else:
+                print("Okay\n")
+            break
+            
     def view_userView(self, username, userInfo):
         """
         This method retrieves and displays the profile information of the user 
