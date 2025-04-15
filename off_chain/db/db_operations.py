@@ -9,6 +9,7 @@ from colorama import Fore, Style, init
 from config import config
 from models.accounts import Accounts
 from models.cron_activities import Cron_Activities
+from models.credentials import Credentials
 
 class DatabaseOperations:
     """
@@ -430,6 +431,8 @@ class DatabaseOperations:
             print(Fore.RED + f'Error deleting licence: {e}' + Style.RESET_ALL)
             return -1
 
+   
+
     def get_credentials(self):
         self.cur.execute("SELECT * FROM Credentials")
         return self.cur.fetchall()
@@ -704,6 +707,25 @@ class DatabaseOperations:
             hashed_passwd = hashlib.scrypt(password.encode(), salt=bytes.fromhex(params[1]), n=2, r=8, p=1, dklen=64)
             return hashed_passwd.hex() == params[0]
         return False
+    
+    def get_creds_by_username(self, username):
+        """
+        Retrieves a user's credentials from the Credentials table based on their username.
+
+        Args:
+            username (str): The username of the user whose credentials are to be retrieved.
+
+        Returns:
+            Credentials: A Credentials object containing the user's credentials if found.
+            None: If no credentials are found for the given username.
+        """
+        creds = self.cur.execute("""
+                                SELECT *
+                                FROM Credentials
+                                WHERE username=?""", (username,)).fetchone()
+        if creds is not None:
+            return Credentials(*creds)
+        return None
 
     def change_password(self, username, new_pass):
         #if self.check_credentials(username, old_pass): #secondo me non ha senso farlo due volte quindi lo levo

@@ -8,6 +8,7 @@ from session.session import Session
 from db.db_operations import DatabaseOperations
 from cli.utils import Utils
 from colorama import Fore, Style, init
+import getpass
 
 
 class CommandLineInterface:
@@ -55,7 +56,9 @@ class CommandLineInterface:
                 self.registration_menu()
             elif choice == 2:
                 print('Login')
-            # todo action controller e menu
+                res_code = self.login_menu()
+                if res_code == 1:
+                    self.print_menu()
 
             elif choice == 3:
                 print('Esci!')
@@ -66,6 +69,47 @@ class CommandLineInterface:
         except ValueError:
             print(Fore.RED + 'Incorrect input, insert a number!\n' + Style.RESET_ALL)
 
+    
+    def login_menu(self):
+        """
+        This method prompts users to provide their credentials 
+        username, and password for auth. It verifies the credentials with 
+        the Controller and grants access if authentication is successful. The method 
+        handles authentication failures.
+
+        Returns:
+            int: An indicator of the login outcome (-2 for authentication failure, -3 for too many login attempts, 1 for successful login).
+        """
+
+        while True:
+            if not self.controller.check_attempts() and self.session.get_timeout_left() < 0:
+                self.session.reset_attempts()
+
+            if self.session.get_timeout_left() <= 0 and self.controller.check_attempts():
+                username = input('Insert username: ')
+                passwd = getpass.getpass('Insert password: ')
+
+                login_code, user_type = self.controller.login(username, passwd)
+
+                if login_code == 1:
+                    print(Fore.GREEN + '\nYou have succesfully logged in!\n' + Style.RESET_ALL)
+                    if role == 'CERTIFIER':
+                         self.certifier_menu(username)
+                    else:
+                         self.common_menu_options(role, username)
+                   
+                elif login_code == -2:
+                    print(Fore.RED + '\nWrong Credentials\n' + Style.RESET_ALL)
+                elif login_code == -3:
+                    print(Fore.RED + '\nToo many attempts\n' + Style.RESET_ALL)
+                    return -1
+                
+            else:
+                print(Fore.RED + '\nMax number of attemps reached\n' + Style.RESET_ALL)
+                print(Fore.RED + f'You will be in timeout for: {int(self.session.get_timeout_left())} seconds\n' + Style.RESET_ALL)
+                return -2
+   
+   
     def registration_menu(self):
         """
         This method prompts users to decide whether to proceed with deployment and 

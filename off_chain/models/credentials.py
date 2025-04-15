@@ -29,11 +29,11 @@ class Credentials(Model):
         - db: DatabaseOperations instance to interact with the database
 
         non so se public_key sia la chiave pubblica del wallet o la chiave pubblica per l'autenticazione, comunque commento per 
-        quello della blockchain è: "The public key associated with the user for accessing their wallet on the blockchain", 
+        quello della blockchain : "The public key associated with the user for accessing their wallet on the blockchain", 
         private blockchain key "The private key associated with the user for accessing their wallet on the blockchain; kept secure and private"
 
-        l'altro è public: "The public key used for the user’s authentication on the platform (separate from the blockchain key)" ?? separato o no poi?
-        private : "The private key used for the user’s authentication on the platform (separate from the blockchain key)" 
+        l'altro  public: "The public key used for the users authentication on the platform (separate from the blockchain key)" ?? separato o no poi?
+        private : "The private key used for the users authentication on the platform (separate from the blockchain key)" 
         """
         super().__init__()
         self.id = id

@@ -40,29 +40,27 @@ class Controller:
         return registration_code
 
 
-    def login(self, username: str, password: str, public_key: str, private_key: str):
+    def login(self, username: str, password: str):
         """
         Attempts to log a user in by validating credentials and handling session attempts.
         
         :param username: The user's username.
         :param password: The user's password.
-        :param public_key: The user's public key.
-        :param private_key: The user's private key.
-        :return: Tuple containing a status code and the user's role, if successful.
+        :return credential object.
         """
-        if(self.check_attempts() and self.db_ops.check_credentials(username, password, public_key, private_key)):
+        if(self.check_attempts() and self.db_ops.check_credentials(username, password)):
             creds: Credentials = self.db_ops.get_creds_by_username(username)
             user_role = creds.get_role()
-            user = self.db_ops.get_user_by_username(username)
+            user = creds.get_username
             self.session.set_user(user)
-            return 0, user_role
+            return 1, user_role
         elif self.check_attempts():
             self.session.increment_attempts()
             if self.session.get_attempts() == self.__n_attempts_limit:
                 self.session.set_error_attempts_timeout(self.__timeout_timer)
-            return -1, None
+            return -2, None
         else:
-            return -2, None   
+            return -3, None   
 
     def check_attempts(self):
         if self.session.get_attempts() < self.__n_attempts_limit:
