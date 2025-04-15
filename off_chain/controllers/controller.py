@@ -4,6 +4,8 @@ from tkinter import SE
 from colorama import Fore, Style, init
 from db.db_operations import DatabaseOperations
 from session.session import Session
+
+from models.credentials import Credentials
 #from models.credentials import Credentials
 
 class Controller:
@@ -36,6 +38,37 @@ class Controller:
         registration_code = self.db_ops.register_creds(username, password, public_key, private_key)
 
         return registration_code
+
+
+    def login(self, username: str, password: str, public_key: str, private_key: str):
+        """
+        Attempts to log a user in by validating credentials and handling session attempts.
+        
+        :param username: The user's username.
+        :param password: The user's password.
+        :param public_key: The user's public key.
+        :param private_key: The user's private key.
+        :return: Tuple containing a status code and the user's role, if successful.
+        """
+        if(self.check_attempts() and self.db_ops.check_credentials(username, password, public_key, private_key)):
+            creds: Credentials = self.db_ops.get_creds_by_username(username)
+            user_role = creds.get_role()
+            user = self.db_ops.get_user_by_username(username)
+            self.session.set_user(user)
+            return 0, user_role
+        elif self.check_attempts():
+            self.session.increment_attempts()
+            if self.session.get_attempts() == self.__n_attempts_limit:
+                self.session.set_error_attempts_timeout(self.__timeout_timer)
+            return -1, None
+        else:
+            return -2, None   
+
+    def check_attempts(self):
+        if self.session.get_attempts() < self.__n_attempts_limit:
+            return True
+        else:
+            return False    
 
     def insert_actor_info(self, role: str, username: str, name: str, lastname: str, actorLicense: int, residence: str, birthdayPlace: str, birthday: str, mail: str, phone: str):
         """
