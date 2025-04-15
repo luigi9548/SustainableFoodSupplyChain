@@ -8,7 +8,7 @@ class Credentials(Model):
     extending the functionality provided by the Model class.
     """
 
-    def __init__(self, id, username, password, role, public_key, private_key, temp_code, temp_code_validity, publicKey, privateKey, update_datetime, creation_datetime, db):       
+    def __init__(self, id, username, password, public_key, private_key, temp_code, temp_code_validity, update_datetime, creation_datetime):       
         """
         Initializes a new instance of Credentials class with the provided user credentials details.
 
@@ -16,13 +16,10 @@ class Credentials(Model):
         - id: Unique identifier for the credentials record
         - username: Username associated with the credentials
         - password: Password for user authentication
-        - role: The role assigned to the user ('USER_CERTIFIER', 'USER_ACTOR', 'ADMIN')
-        - public_key: ...
-        - private_key: ...
+        - public_key: public key for the user
+        - private_key: private key for the user
         - temp_code: Temporary code for two-factor authentication (optional)
         - temp_code_validity: Expiration  date/time for the temporary code (optional)
-        - publicKey: ...
-        - privateKey ....
         - update_datetime: Timestamp for when the credentials were last updated
         - creation_datetime: Timestamp for when the credentials were created
         - db: DatabaseOperations instance to interact with the database
@@ -38,16 +35,12 @@ class Credentials(Model):
         self.id = id
         self.username = username
         self.password = password
-        self.role = role
         self.public_key = public_key
         self.private_key = private_key
         self.temp_code = temp_code
         self.temp_code_validity = temp_code_validity
-        self.publicKey = publicKey
-        self.privateKey = privateKey
         self.update_datetime = update_datetime
         self.creation_datetime = creation_datetime
-        self.db = db
 
     # Getter methods for each attribute
     def get_id(self):
@@ -58,9 +51,6 @@ class Credentials(Model):
 
     def get_password(self):
         return self.password
-
-    def get_role(self):
-        return self.role
 
     def get_public_key(self):
         return self.public_key
@@ -74,41 +64,11 @@ class Credentials(Model):
     def get_temp_code_validity(self):
         return self.temp_code_validity
 
-    def get_publicKey(self):
-        return self.publicKey
-
-    def get_privateKey(self):
-        return self.privateKey
-
     def get_update_datetime(self):
         return self.update_datetime
 
     def get_creation_datetime(self):
         return self.creation_datetime
-        
-    def save(self):
-        """
-        Saves a new or updates an existing Credentials record in the database.
-        Implements SQL queries to insert or update credentials based on the presence of an ID.
-        """
-        if self.id is None:
-            # Insert new credentials record
-            result = self.db.register_creds(
-                self.username, self.password, self.role,
-                self.public_key, self.private_key,
-                self.temp_code, self.temp_code_validity
-            )
-            if result == 0:
-                self.id = self.cur.lastrowid
-        else:
-            # Update existing credentials record
-            result = self.db.update_creds(self.username, self.password, self.role, self.public_key, self.private_key, 
-                              self.temp_code, self.temp_code_validity, self.publicKey, self.privateKey, self.id)
-        if result == 0:
-            print(Fore.GREEN + 'Information saved correctly!\n' + Style.RESET_ALL)
-        else:
-            print(Fore.RED + 'Error saving information!\n' + Style.RESET_ALL)
-        return result
 
     def delete(self):
         """

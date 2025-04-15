@@ -50,7 +50,7 @@ class Controller:
         """
         if(self.check_attempts() and self.db_ops.check_credentials(username, password)):
             creds: Credentials = self.db_ops.get_creds_by_username(username)
-            user_role = creds.get_role()
+            user_role = self.get_user_by_username(username).get_type()
             user = creds.get_username
             self.session.set_user(user)
             return 1, user_role

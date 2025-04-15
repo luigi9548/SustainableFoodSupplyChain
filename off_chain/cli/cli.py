@@ -88,7 +88,7 @@ class CommandLineInterface:
 
             if self.session.get_timeout_left() <= 0 and self.controller.check_attempts():
                 username = input('Insert username: ')
-                passwd = getpass.getpass('Insert password: ')
+                passwd = maskpass.askpass('Insert password: ', mask="*")
 
                 login_code, role = self.controller.login(username, passwd)
 
