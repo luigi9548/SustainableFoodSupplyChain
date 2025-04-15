@@ -24,7 +24,11 @@ class CommandLineInterface:
         self.controller = Controller(session)
         self.act_controller = ActionController()
         self.session = session
+
+         # test login -> everytime reset
         self.ops = DatabaseOperations()
+        # test login -> everytime reset
+
         self.util = Utils(session)
 
         self.menu = {
@@ -61,7 +65,7 @@ class CommandLineInterface:
                     self.print_menu()
 
             elif choice == 3:
-                print('Quit!')
+                print('Esci!')
                 exit()
             else:
                 print(Fore.RED + 'Wrong choice, insert a valid choise!' + Style.RESET_ALL)
