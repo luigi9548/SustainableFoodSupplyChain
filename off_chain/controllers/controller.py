@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from tkinter import SE
 from colorama import Fore, Style, init
 from db.db_operations import DatabaseOperations
 from session.session import Session
@@ -22,18 +23,17 @@ class Controller:
         self.__n_attempts_limit = 5 # Maximum number of login attempts before lockout.
         self.__timeout_timer = 180 # Timeout duration in seconds.
 
-    def registration(self, username: str, password: str, role: str, public_key: str, private_key: str):
+    def registration(self, username: str, password: str, public_key: str, private_key: str):
         """
         Registers a new user in the database with the given credentials.
         
         :param username: The user's username.
         :param password: The user's password.
-        :param role: The user's role in the system.
         :param public_key: The user's public key.
         :param private_key: The user's private key.
         :return: A registration code indicating success or failure.
         """
-        registration_code = self.db_ops.register_creds(username, password, role, public_key, private_key)
+        registration_code = self.db_ops.register_creds(username, password, public_key, private_key)
 
         return registration_code
 
@@ -56,12 +56,12 @@ class Controller:
         insertion_code = self.db_ops.insert_actor(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
 
         if insertion_code == 0:
-            user = self.get_user_by_username(username) 
+            user = self.get_user_by_username(username)
             self.session.set_user(user)
             print(Fore.GREEN + 'DONE' + Style.RESET_ALL)
 
         return insertion_code
-    
+
     def check_null_info(self, info):
         """
         Checks if the provided information is non-null (or truthy).
@@ -121,7 +121,7 @@ class Controller:
 
     def check_unique_phone_number(self, phone):
         return self.db_ops.check_unique_phone_number(phone)
-    
+
     def check_unique_email(self, mail):
         return self.db_ops.check_unique_email(mail)
 
@@ -150,8 +150,32 @@ class Controller:
     def get_users(self):
         return self.db_ops.get_users()
 
+    def create_product(self, name, category, co2Emission):
+        return self.db_ops.insert_product(name, category, co2Emission)
+
+    def update_product(self, product_id, co2Emission):
+        return self.db_ops.update_product(product_id, co2Emission)
+
+    def update_password(self, username, password):
+        return self.db_ops.update_creds(username=username, password=password)
+
+    def check_credentials(self, username, password):
+        return self.db_ops.check_credentials(username=username, password=password)
+
+    def update_password(self, username, password):
+        return self.db_ops.change_password(username, password)
+
     def get_activities_to_be_processed_by_username(self, username):
         return self.db_ops.get_activities_to_be_processed_by_username(username)
 
     def get_co2Amount_by_activity(self, activity_id):
         return self.db_ops.get_co2Amount_by_activity(activity_id)
+
+    def update_activity_state(self, activitie_id):
+        state = self.db_ops.get_state_by_activity(activitie_id)
+
+        if state == 0:
+            return self.db_ops.update_activity_state(activitie_id, 1)
+        elif state == 1:
+            return self.db_ops.update_activity_state(activitie_id, 2)
+    

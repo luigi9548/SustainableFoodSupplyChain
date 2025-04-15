@@ -1,4 +1,4 @@
-import os
+﻿import os
 import time
 import json
 from colorama import Fore, Style, init
@@ -64,7 +64,7 @@ class ActionController:
                         log_error(f"Invalid data in files for contract '{contract_name}'. Please check the files.")
                 else:
                     log_error(f"Missing files for contract '{contract_name}'. Expected {contract_name}_address.txt and {contract_name}_abi.json.")
-        
+
             if not self.contracts:
                 log_error("No valid contracts found. Deploy contracts first.")
                 print(Fore.RED + "No valid contracts found. Deploy contracts first." + Style.RESET_ALL)
@@ -164,6 +164,7 @@ class ActionController:
             'gasPrice': gas_price or self.w3.eth.gas_price,
             'nonce': nonce or self.w3.eth.get_transaction_count(from_address)
         }
+
         try:
             function = getattr(self.contracts[contract_name].functions, function_name)(*args)
             tx_hash = function.transact(tx_parameters)
@@ -265,6 +266,105 @@ class ActionController:
             raise ValueError(Fore.RED + f"No function available for entity type {entity_type}" + Style.RESET_ALL)
         return self.write_data(function_name, contract_name, from_address, *args)
 
+    def create_nft(self, *args, from_address, contract_name='SupplyChainNFT'):
+        """
+        Mints a new NFT by calling the mint function in the smart contract.
+
+        Args:
+            *args: Additional arguments required by the contract function.
+            from_address (str): The Ethereum address to send the transaction from.
+            contract_name (str): Name of the contract (default is 'SupplyChainNFT').
+
+        Returns:
+            dict: Transaction receipt.
+    
+        Raises:
+            ValueError: If any required parameter is missing.
+        """
+        if not from_address:
+            raise ValueError(Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
+        """if not to_address:
+            raise ValueError(Fore.RED + "A valid recipient address ('to_address') must be provided." + Style.RESET_ALL)
+        """
+        owner_address = self.contracts[contract_name].functions.getOwner().call()
+        tx_hash = self.contracts[contract_name].functions.authorizeEditor(from_address).transact({'from': owner_address})
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        return self.write_data("mint", contract_name, from_address, *args)
+
+    def update_nft(self, *args, from_address, contract_name='SupplyChainNFT'):
+        """
+        Updates an existing NFT on the blockchain by calling the 'updateNFT' function
+        in the SupplyChainNFT smart contract.
+
+        Args:
+            *args: Arguments required by the updateNFT function.
+            from_address (str): The Ethereum address to send the transaction from.
+            contract_name (str): Name of the smart contract (default is 'SupplyChainNFT').
+
+        Returns:
+            dict: Transaction receipt of the update operation.
+
+        Raises:
+            ValueError: If 'from_address' is not provided.
+        """
+        if not from_address:
+            raise ValueError(Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
+
+        return self.write_data("updateNFT", contract_name, from_address, *args)
+
+    def transfer_nft(self, token_id, to_address, nextRole, from_address, contract_name='SupplyChainNFT'):
+        """
+        Transfers an NFT from one address to another using the smart contract's custom logic.
+
+        Args:
+            to_address (str): The Ethereum address of the recipient.
+            token_id (int): The ID of the NFT to be transferred.
+            from_address (str): The Ethereum address of the current owner.
+            contract_name (str): Name of the smart contract (default is 'SupplyChainNFT').
+
+        Returns:
+            dict: Transaction receipt of the transfer operation.
+
+        Raises:
+            ValueError: If any required parameter is missing.
+        """
+        if not from_address:
+            raise ValueError(
+                Fore.RED + "A valid Ethereum address must be provided as 'from_address'." + Style.RESET_ALL)
+        if not to_address:
+            raise ValueError(
+                Fore.RED + "A valid recipient address ('to_address') must be provided." + Style.RESET_ALL)
+
+        return self.write_data("safeTransferNFT", contract_name, from_address, token_id, to_address, nextRole)
+
+    def get_nft_data_by_owner(self, owner_address, contract_name='SupplyChainNFT'):
+        """
+        Retrieves all NFTs owned by a specific user from the blockchain.
+    
+        Args:
+            owner_address (str): The Ethereum address of the NFT owner.
+            contract_name (str): Name of the smart contract (default is 'SupplyChainNFT').
+    
+        Returns:
+            tuple: Contains six arrays (ids, names, categories, emissions, scores, harvests)
+            representing all NFTs owned by the specified address.
+        """
+        return self.read_data("getNFTDataByOwner", contract_name, owner_address)
+
+    def get_emissions_by_nft_id(self, nft_id, contract_name='SupplyChainNFT'):
+        """
+        Retrieves the emissions data for a specific NFT by its ID.
+    
+        Args:
+            nft_id (int): The ID of the NFT.
+            contract_name (str): Name of the smart contract (default is 'SupplyChainNFT').
+    
+        Returns:
+            tuple: Contains emissions data for the specified NFT.
+        """
+        return self.read_data("getEmissionsByNFTId", contract_name, nft_id)
+
     def assign_carbon_credits(self, *args, from_address, contract_name = 'CarbonCreditToken'):
         """
         Assigns carbon credits to a user.
@@ -280,3 +380,16 @@ class ActionController:
         self.w3.eth.wait_for_transaction_receipt(tx_hash)
 
         return self.write_data('mint', contract_name, from_address, *args)
+
+    def get_balance(self, user_key, contract_name='CarbonCreditToken'):
+        """
+        Retrieves the balance of carbon credits for a specific user.
+    
+        Args:
+            user_key (str): The user's Ethereum address.
+            contract_name (str): Name of the smart contract (default is 'CarbonCreditToken').
+    
+        Returns:
+            user balance.
+        """
+        return self.read_data("balanceOf", contract_name, user_key)

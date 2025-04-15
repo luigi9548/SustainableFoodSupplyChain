@@ -9,7 +9,7 @@ import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
  * @title SupplyChainNFT
  * @dev ERC721 contract to manage NFTs representing food products in the supply chain
  */
-contract SupplyChainNFT is ERC721, Ownable {
+contract SupplyChainNFT is ERC721 {
     /**
      * @dev Structure representing an NFT in the supply chain
      * @param id Unique identifier of the NFT
@@ -20,7 +20,6 @@ contract SupplyChainNFT is ERC721, Ownable {
      * @param co2Emission // CO₂ emissions in Kg
      * @param qualityScore // Quality score of the product
      * @param harvestDate // Harvest or production date (Unix timestamp)
-     * @param sensorId // ID of the sensor that recorded the data
      */
     struct NFT {
         uint256 id;
@@ -31,7 +30,6 @@ contract SupplyChainNFT is ERC721, Ownable {
         uint256 co2Emission;
         uint256 qualityScore;
         uint256 harvestDate;
-        uint256 sensorId;
     }
 
     //Struct to log actions for every previous struct
@@ -49,7 +47,9 @@ contract SupplyChainNFT is ERC721, Ownable {
     mapping(uint256 => NFT) public nfts;
     mapping(address => string) public userRoles;
     mapping(uint256 => ActionLog) public actionLogs;
-    
+    mapping(address => bool) public authorizedEditors;
+    address public owner;
+   
     //Events for actions
     event NFTTransferred(uint256 indexed tokenId, address indexed from, address indexed to, string newRole);
     event NFTUpdated(uint256 indexed tokenId, string name, uint256 emissions);
@@ -59,7 +59,42 @@ contract SupplyChainNFT is ERC721, Ownable {
     /**
      * @dev Constructor to initialize the ERC721 token
      */
-    constructor() ERC721("SupplyChainNFT", "SCNFT") Ownable(msg.sender) {}
+    constructor() ERC721("SupplyChainNFT", "SCNFT") {
+        owner = msg.sender;
+    }
+
+   //Modifiers
+    /**
+     * @dev Restricts function access to the contract owner only.
+     */
+    modifier onlyOwner() {
+        require(msg.sender == owner, "This function is restricted to the contract owner.");
+        _;
+    }
+
+    /**
+     * @dev Restricts function access to either the contract owner or authorized editors.
+     */
+    modifier onlyAuthorized() {
+        require(msg.sender == owner || authorizedEditors[msg.sender], "Access denied: caller is not the owner or an authorized editor.");
+        _;
+    }
+    
+    /**
+     * @dev Return Owner Account.
+     */
+    function getOwner() public view returns (address) {
+        return owner;
+    }
+
+    // Functions
+    /**
+     * @dev Authorizes a new editor to manage records.
+     * @param _editor Address of the new editor to authorize.
+     */
+    function authorizeEditor(address _editor) public onlyOwner {
+        authorizedEditors[_editor] = true;
+    }
 
     /**
      * @notice Mints a new NFT and assigns it to a specified address
@@ -71,12 +106,11 @@ contract SupplyChainNFT is ERC721, Ownable {
      * @param emissions Carbon emissions of the product
      * @param qualityScore // Quality score of the product
      * @param harvestDate // Harvest or production date (Unix timestamp)
-     * @param sensorId // ID of the sensor that recorded the data
      */
-    function mint(address to, string memory role, string memory name, string memory category, uint256 emissions, uint256 qualityScore, uint256 harvestDate, uint256 sensorId) external onlyOwner {
+    function mint(address to, string memory role, string memory name, string memory category, uint256 emissions, uint256 qualityScore, uint256 harvestDate) external onlyAuthorized {
         uint256 tokenId = nextTokenId++;
         _safeMint(to, tokenId);
-        nfts[tokenId] = NFT(tokenId, to, role, name, category, emissions, qualityScore, harvestDate, sensorId);
+        nfts[tokenId] = NFT(tokenId, to, role, name, category, emissions, qualityScore, harvestDate);
         userRoles[to] = role;
 
         logAction("Mint", msg.sender, "New NFT minted");
@@ -89,11 +123,10 @@ contract SupplyChainNFT is ERC721, Ownable {
      * @param tokenId ID of the NFT to be transferred
      * @param to Address of the new owner
      */
-    function safeTransferNFT(uint256 tokenId, address to) public {
+    function safeTransferNFT(uint256 tokenId, address to, string memory nextRole) public {
         require(ownerOf(tokenId) == msg.sender, "Not the owner of the NFT");
         string memory currentRole = nfts[tokenId].role;
-        string memory nextRole = userRoles[to];
-
+                
         require(isValidTransfer(currentRole, nextRole), "Invalid transfer direction");
 
         _transfer(msg.sender, to, tokenId);
@@ -111,10 +144,10 @@ contract SupplyChainNFT is ERC721, Ownable {
      * @return bool Returns true if the transfer is valid, false otherwise
      */
     function isValidTransfer(string memory fromRole, string memory toRole) internal pure returns (bool) {
-        if (keccak256(bytes(fromRole)) == keccak256(bytes("Farmer")) && keccak256(bytes(toRole)) == keccak256(bytes("Carrier"))) return true;
-        if (keccak256(bytes(fromRole)) == keccak256(bytes("Carrier")) && keccak256(bytes(toRole)) == keccak256(bytes("Producer"))) return true;
-        if (keccak256(bytes(fromRole)) == keccak256(bytes("Producer")) && keccak256(bytes(toRole)) == keccak256(bytes("Carrier"))) return true;
-        if (keccak256(bytes(fromRole)) == keccak256(bytes("Carrier")) && keccak256(bytes(toRole)) == keccak256(bytes("Seller"))) return true;
+        if (keccak256(bytes(fromRole)) == keccak256(bytes("FARMER")) && keccak256(bytes(toRole)) == keccak256(bytes("CARRIER"))) return true;
+        if (keccak256(bytes(fromRole)) == keccak256(bytes("CARRIER")) && keccak256(bytes(toRole)) == keccak256(bytes("PRODUCER"))) return true;
+        if (keccak256(bytes(fromRole)) == keccak256(bytes("PRODUCER")) && keccak256(bytes(toRole)) == keccak256(bytes("CARRIER"))) return true;
+        if (keccak256(bytes(fromRole)) == keccak256(bytes("CARRIER")) && keccak256(bytes(toRole)) == keccak256(bytes("SELLER"))) return true;
         return false;
     }
 
@@ -153,4 +186,71 @@ contract SupplyChainNFT is ERC721, Ownable {
         actionLogs[actionCounter] = ActionLog(actionCounter, _actionType, _initiator, block.timestamp, _details);
         emit ActionLogged(actionCounter, _actionType, _initiator, block.timestamp, _details);
     }
+
+    /**
+     * @notice Returns all NFTs owned by a specific user
+     * @param user Address of the user
+     * @return ids The list of NFT IDs owned by the user
+     * @return names The list of NFT names owned by the user
+     * @return categories The list of NFT categories owned by the user
+     * @return emissions The list of CO2 emissions of NFTs owned by the user
+     * @return scores The list of quality scores of NFTs owned by the user
+     * @return harvests The list of harvest dates of NFTs owned by the user
+     */
+    function getNFTDataByOwner(address user) public view returns (
+        uint256[] memory ids,
+        string[] memory names,
+        string[] memory categories,
+        uint256[] memory emissions,
+        uint256[] memory scores,
+        uint256[] memory harvests
+    ) {
+        uint256 total = nextTokenId;
+        uint256 count = 0;
+
+        // Conta quanti NFT possiede
+        for (uint256 i = 0; i < total; i++) {
+            if (ownerOf(i) == user) {
+                count++;
+            }
+        }
+
+        // Prepara array per ogni campo della struct
+        ids = new uint256[](count);
+        names = new string[](count);
+        categories = new string[](count);
+        emissions = new uint256[](count);
+        scores = new uint256[](count);
+        harvests = new uint256[](count);
+
+        uint256 index = 0;
+        for (uint256 i = 0; i < total; i++) {
+            if (ownerOf(i) == user) {
+                NFT memory nft = nfts[i];
+                ids[index] = nft.id;
+                names[index] = nft.name;
+                categories[index] = nft.category;
+                emissions[index] = nft.co2Emission;
+                scores[index] = nft.qualityScore;
+                harvests[index] = nft.harvestDate;
+                index++;
+            }
+        }
+        return (ids, names, categories, emissions, scores, harvests);
+    }
+
+    /**
+     * @notice Retrieves the CO2 emissions for a specific NFT based on its ID
+     * @param tokenId ID of the NFT
+     * @return emissions The CO2 emissions (in Kg) associated with the NFT
+     */
+    function getEmissionsByNFTId(uint256 tokenId) public view returns (uint256 emissions) {
+        // Verifica se l'NFT esiste usando la funzione ownerOf
+        address owner = ownerOf(tokenId);
+        require(owner != address(0), "NFT does not exist");
+
+        // Restituisce le emissioni di CO2 dell'NFT
+        emissions = nfts[tokenId].co2Emission;
+    }
+
 }

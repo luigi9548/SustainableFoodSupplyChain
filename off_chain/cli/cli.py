@@ -1,4 +1,4 @@
-import getpass
+﻿import maskpass
 import re
 from eth_utils import *
 from eth_keys import *
@@ -33,17 +33,17 @@ class CommandLineInterface:
         }
 
 
-    # lo togliamo ? 
+    # lo togliamo ?
     def print_menu(self):
         """Displays the menu and handles user choices."""
         print(Fore.CYAN + r"""
- ______     _____     __     ______     __  __     ______     __     __   __       
-/\  __ \   /\  __-.  /\ \   /\  ___\   /\ \_\ \   /\  __ \   /\ \   /\ "-.\ \      
-\ \  __ \  \ \ \/\ \ \ \ \  \ \ \____  \ \  __ \  \ \  __ \  \ \ \  \ \ \-.  \     
- \ \_\ \_\  \ \____-  \ \_\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\  \ \_\\"\_\    
-  \/_/\/_/   \/____/   \/_/   \/_____/   \/_/\/_/   \/_/\/_/   \/_/   \/_/ \/_/   
-""" + Style.RESET_ALL)
-
+     ███████╗██╗   ██╗██████╗ ██████╗ ██╗  ██╗   ██╗ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗
+     ██╔════╝██║   ██║██╔══██╗██╔══██╗██║  ╚██╗ ██╔╝██╔════╝██║  ██║██╔══██╗██║████╗  ██║
+     ███████╗██║   ██║██████╔╝██████╔╝██║   ╚████╔╝ ██║     ███████║███████║██║██╔██╗ ██║
+     ╚════██║██║   ██║██╔═══╝ ██╔═══╝ ██║    ╚██╔╝  ██║     ██╔══██║██╔══██║██║██║╚██╗██║
+     ███████║╚██████╔╝██║     ██║     ███████╗██║   ╚██████╗██║  ██║██║  ██║██║██║ ╚████║
+     ╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
+    """ + Style.RESET_ALL)
         for key, value in self.menu.items():
             print(key, '--', value)
 
@@ -55,8 +55,8 @@ class CommandLineInterface:
                 self.registration_menu()
             elif choice == 2:
                 print('Login')
-               # todo action controller e menu 
-              
+            # todo action controller e menu
+
             elif choice == 3:
                 print('Esci!')
                 exit()
@@ -93,9 +93,9 @@ class CommandLineInterface:
         attempts = 0
         while True:
             public_key = input('Public Key: ')
-            private_key = getpass.getpass('Private Key: ')
-            confirm_private_key = getpass.getpass('Confirm Private Key: ')
-            
+            private_key = maskpass.askpass('Private Key: ', mask="*")
+            confirm_private_key = maskpass.askpass('Confirm Private Key: ', mask="*")
+
             if private_key == confirm_private_key:
                 if self.controller.check_keys(public_key, private_key):
                     print(Fore.RED + 'A wallet with these keys already exists. Please enter a unique set of keys.' + Style.RESET_ALL)
@@ -118,7 +118,7 @@ class CommandLineInterface:
             else:
                 print(Fore.RED + 'Private key and confirmation do not match. Try again.\n' + Style.RESET_ALL)
 
-        
+
         if is_address(public_key) and (public_key == pk):
 
             print('Enter your personal information.')
@@ -167,23 +167,23 @@ class CommandLineInterface:
                         print(Fore.RED + "Role not confirmed. Retry\n" + Style.RESET_ALL)
                 else:
                     print(Fore.RED + "You have to select a role between (C) certifier, (F) farmer, (R) carrier, (S) seller, (P) producer. Retry\n" + Style.RESET_ALL)
-        
+
             while True:
                 while True:
-                    password = getpass.getpass('Password: ')
-                    passwd_regex = r'^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?!.*\s).{8,100}$'
+                    password = maskpass.askpass('Password: ', mask="*")
+                    passwd_regex = r'^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!?])(?!.*\s).{8,100}$'
                     if not re.fullmatch(passwd_regex, password):
                         print(Fore.RED + 'Password must contain at least 8 characters, at least one digit, at least one uppercase letter, one lowercase letter, and at least one special character.\n' + Style.RESET_ALL)
                     else: break
 
-                confirm_password = getpass.getpass('Confirm Password: ')
-                
+                confirm_password = maskpass.askpass('Confirm Password: ', mask="*")
+
                 if password != confirm_password:
                     print(Fore.RED + 'Password and confirmation do not match. Try again\n' + Style.RESET_ALL)
                 else:
                     break
 
-            reg_code = self.controller.registration(username, password, user_role, public_key, private_key)
+            reg_code = self.controller.registration(username, password, public_key, private_key)
             if reg_code == 0:
                 print(Fore.GREEN + 'You have succesfully registered!\n' + Style.RESET_ALL)
                 if role == 'C':
@@ -198,10 +198,10 @@ class CommandLineInterface:
                     self.insert_actor_info(username, 'PRODUCER')
             elif reg_code == -1:
                 print(Fore.RED + 'Your username has been taken.\n' + Style.RESET_ALL)
-        
+
         else:
             print(Fore.RED + 'Sorry, but the provided public and private key do not match to any account\n' + Style.RESET_ALL)
-            return 
+            return
 
     def insert_actor_info(self, username, role):
         """
@@ -241,13 +241,13 @@ class CommandLineInterface:
             else: print(Fore.RED + "Invalid birthdate or incorrect format." + Style.RESET_ALL)
         while True:
             mail = input('E-mail: ')
-            if self.controller.check_email_format(mail): 
+            if self.controller.check_email_format(mail):
                 if self.controller.check_unique_email(mail) == 0: break
                 else: print(Fore.RED + "This e-mail has already been inserted. \n" + Style.RESET_ALL)
             else: print(Fore.RED + "Invalid e-mail format.\n" + Style.RESET_ALL)
         while True:
             phone = input('Phone number: ')
-            if self.controller.check_phone_number_format(phone): 
+            if self.controller.check_phone_number_format(phone):
                 if self.controller.check_unique_phone_number(phone) == 0: break
                 else: print(Fore.RED + "This phone number has already been inserted. \n" + Style.RESET_ALL)
             else: print(Fore.RED + "Invalid phone number format.\n" + Style.RESET_ALL)
@@ -259,19 +259,11 @@ class CommandLineInterface:
             print(Fore.GREEN + 'Information saved correctly!' + Style.RESET_ALL)
             if role == 'CERTIFIER':
                 self.certifier_menu(username)
-            """
-            elif role == 'F':
-                self.medic_menu(username)
-            elif role == 'R':
-                self.medic_menu(username)
-            elif role == 'S':
-                self.medic_menu(username)
-            elif role == 'P':
-                self.medic_menu(username)"""
-            # self.medic_menu(username) Inserire switch case per i vari ruoli 
+            else:
+                self.common_menu_options(role, username)
         elif insert_code == -1:
             print(Fore.RED + 'Internal error!' + Style.RESET_ALL)
-    
+
     def certifier_menu(self, username):
         """
         This method presents certifier with a menu of options tailored to their role. 
@@ -289,21 +281,22 @@ class CommandLineInterface:
             2: "View user activities",
             3: "View users data",
             4: "View user data",
-            5: "View products data", 
+            5: "View products data",
             6: "Assign Carbon credits",
             7: "Remove Carbon credits",
-            8: "View profile",
-            9: "Update profile",
-            10: "Change password",
-            11: "Log out"
+            8: "View user carbon credits balance",
+            9: "View profile",
+            10: "Update profile",
+            11: "Change password",
+            12: "Log out"
         }
 
         while True:
-            print(Fore.CYAN + "\nMENU" + Style.RESET_ALL)                           
+            print(Fore.CYAN + "\nMENU" + Style.RESET_ALL)
             for key, value in certifier_options.items():
                 print(f"{key} -- {value}")
-                                                
-            try:                                    
+
+            try:
                 choice = int(input("Choose an option: "))
                 if choice in certifier_options:
                     if choice == 1:
@@ -316,6 +309,10 @@ class CommandLineInterface:
 
                     elif choice == 3:
                         self.util.view_usersView()
+
+                    elif choice == 4:
+                        username = input("Enter the username of the user whose profile you want to view: ")
+                        self.util.view_userView(username, "\nUSER INFO\n")
 
                     elif choice == 6:
                         username = input("Enter the username of the user you want to assign carbon credits : ")
@@ -333,21 +330,21 @@ class CommandLineInterface:
                             print(Fore.GREEN + "Assignment completed!" + Style.RESET_ALL)
                         else:
                             print(Fore.RED + "Operation cancelled!" + Style.RESET_ALL)
-
-                    elif choice == 4:
-                        username = input("Enter the username of the user whose profile you want to view: ")
-                        self.util.view_userView(username, "\nUSER INFO\n")
-
+                        
                     elif choice == 8:
+                        username = input("Enter the username of the user you want to see carbon credits balance: ")
+                        self.util.view_user_balance(username)
+
+                    elif choice == 9:
                         self.util.view_userView(username, "\nCERTIFIER INFO\n")
 
-                    elif choice == 9:                           
-                        self.util.update_profile(username, "CERTIFIER")
-                
                     elif choice == 10:
-                        self.util.change_passwd(username)
+                        self.util.update_profile(username, "CERTIFIER")
 
                     elif choice == 11:
+                        self.util.change_passwd(username)
+
+                    elif choice == 12:
                         confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
                         if confirm == 'Y':
                             print(Fore.CYAN + "\nThank you for using the service!\n" + Style.RESET_ALL)
@@ -356,6 +353,70 @@ class CommandLineInterface:
                         else:
                             print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
 
+            except ValueError:
+                print(Fore.RED + "Invalid Input! Please enter a valid number." + Style.RESET_ALL)
+
+    def common_menu_options(self, role, username):
+        """
+        Handles menu options common to all roles with NFT-related functionalities.
+        Args:
+            role (str): The role of the user (FARMER, CARRIER, SELLER, PRODUCER)
+            username (str): The username of the logged-in user
+        """
+        common_options = {
+            1: "View Profile",
+            2: "Update Profile",
+            3: "Change Password",
+            4: f"{'Create' if role == 'FARMER' else 'Update'} NFT",
+            5: "View My Carbon Credits balance",
+            6: "View My NFTs",
+            7: "Exchange NFT",
+            8: "Log out"
+        }
+        while True:
+            print(Fore.CYAN + f"\n{role} MENU" + Style.RESET_ALL)
+            # Print menu options
+            for key, value in common_options.items():
+                print(f"{key} -- {value}")
+            try:
+                choice = int(input("Choose an option: "))
+                if choice in common_options:
+                    if choice == 1:
+                        # View Profile
+                        self.util.view_userView(username, f"\n{role} INFO\n")
+                    elif choice == 2:
+                        # Update Profile
+                        self.util.update_profile(username, role)
+                    elif choice == 3:
+                        # Change Password
+                        self.util.change_passwd(username)
+                    elif choice == 4:
+                        # NFT Creation (Farmer) or NFT Update (Others)
+                        if role == "FARMER":
+                            self.util.create_nft(username)
+                        else:
+                            self.util.update_nft(username)
+                    elif choice == 5:
+                        self.util.view_user_balance(username)
+                    elif choice == 6:
+                        # View user's NFTs
+                        self.util.display_user_nfts(username)
+                    elif choice == 7:
+                        # Exchange NFT for all roles
+                        self.util.transfer_nft(username, role)
+                    elif choice == 8:
+                        # Log out
+                        confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
+                        if confirm == 'Y':
+                            print(Fore.CYAN + "\nThank you for using the service!\n" + Style.RESET_ALL)
+                            self.session.reset_session()
+                            return
+                        else:
+                            print("Logout cancelled.")
+                    else:
+                        print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
+                else:
+                    print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
             except ValueError:
                 print(Fore.RED + "Invalid Input! Please enter a valid number." + Style.RESET_ALL)
 
