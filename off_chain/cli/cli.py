@@ -52,7 +52,7 @@ class CommandLineInterface:
             choice = int(input('Scegli cosa fare: '))
 
             if choice == 1:
-                print('Registra utente')
+                print('Registration')
                 self.registration_menu()
             elif choice == 2:
                 print('Login')
@@ -61,7 +61,7 @@ class CommandLineInterface:
                     self.print_menu()
 
             elif choice == 3:
-                print('Esci!')
+                print('Quit!')
                 exit()
             else:
                 print(Fore.RED + 'Wrong choice, insert a valid choise!' + Style.RESET_ALL)
@@ -76,9 +76,6 @@ class CommandLineInterface:
         username, and password for auth. It verifies the credentials with 
         the Controller and grants access if authentication is successful. The method 
         handles authentication failures.
-
-        Returns:
-            int: An indicator of the login outcome (-2 for authentication failure, -3 for too many login attempts, 1 for successful login).
         """
 
         while True:
@@ -89,7 +86,7 @@ class CommandLineInterface:
                 username = input('Insert username: ')
                 passwd = getpass.getpass('Insert password: ')
 
-                login_code, user_type = self.controller.login(username, passwd)
+                login_code, role = self.controller.login(username, passwd)
 
                 if login_code == 1:
                     print(Fore.GREEN + '\nYou have succesfully logged in!\n' + Style.RESET_ALL)
