@@ -1,6 +1,5 @@
 from sqlite3 import dbapi2
 from models.model_base import Model
-from db.db_operations import DatabaseOperations
 from colorama import Fore, Style, init
 
 class Credentials(Model):
