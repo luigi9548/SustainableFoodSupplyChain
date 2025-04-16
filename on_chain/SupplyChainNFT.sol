@@ -253,4 +253,9 @@ contract SupplyChainNFT is ERC721 {
         emissions = nfts[tokenId].co2Emission;
     }
 
+    // Funzione per ottenere l'ultimo tokenId emesso
+    function getLastTokenId() public view returns (uint256) {
+        return nextTokenId - 1;
+    }
+
 }

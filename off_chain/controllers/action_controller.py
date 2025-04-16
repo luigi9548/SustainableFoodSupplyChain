@@ -1,7 +1,9 @@
-﻿import os
+﻿from calendar import c
+import os
 import time
 import json
 from colorama import Fore, Style, init
+from pydantic.types import T
 from controllers.deploy_controller import DeployController
 from session.logging import log_msg, log_error
 from web3 import Web3
@@ -364,6 +366,18 @@ class ActionController:
             tuple: Contains emissions data for the specified NFT.
         """
         return self.read_data("getEmissionsByNFTId", contract_name, nft_id)
+
+    def get_last_id(self, contract_name='SupplyChainNFT'):
+        """
+        Retrieves the last ID used for NFTs in the smart contract.
+    
+        Args:
+            contract_name (str): Name of the smart contract (default is 'SupplyChainNFT').
+    
+        Returns:
+            int: The last ID used for NFTs.
+        """
+        return self.read_data("getLastTokenId", contract_name)
 
     def assign_carbon_credits(self, *args, from_address, contract_name = 'CarbonCreditToken'):
         """

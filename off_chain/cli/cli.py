@@ -25,7 +25,7 @@ class CommandLineInterface:
         self.act_controller = ActionController()
         self.session = session
 
-         # test login -> everytime reset
+        # test login -> everytime reset
         self.ops = DatabaseOperations()
         # test login -> everytime reset
 
@@ -73,7 +73,7 @@ class CommandLineInterface:
         except ValueError:
             print(Fore.RED + 'Incorrect input, insert a number!\n' + Style.RESET_ALL)
 
-    
+
     def login_menu(self):
         """
         This method prompts users to provide their credentials 
@@ -95,22 +95,22 @@ class CommandLineInterface:
                 if login_code == 1:
                     print(Fore.GREEN + '\nYou have succesfully logged in!\n' + Style.RESET_ALL)
                     if role == 'CERTIFIER':
-                         self.certifier_menu(username)
+                        self.certifier_menu(username)
                     else:
-                         self.common_menu_options(role, username)
-                   
+                        self.common_menu_options(role, username)
+
                 elif login_code == -2:
                     print(Fore.RED + '\nWrong Credentials\n' + Style.RESET_ALL)
                 elif login_code == -3:
                     print(Fore.RED + '\nToo many attempts\n' + Style.RESET_ALL)
                     return -1
-                
+
             else:
                 print(Fore.RED + '\nMax number of attemps reached\n' + Style.RESET_ALL)
                 print(Fore.RED + f'You will be in timeout for: {int(self.session.get_timeout_left())} seconds\n' + Style.RESET_ALL)
                 return -2
-   
-   
+
+
     def registration_menu(self):
         """
         This method prompts users to decide whether to proceed with deployment and 
@@ -359,6 +359,10 @@ class CommandLineInterface:
                         username = input("Enter the username of the user whose profile you want to view: ")
                         self.util.view_userView(username, "\nUSER INFO\n")
 
+                    elif choice == 5:
+                        username = input("Enter the username of the user whose products you want to view: ")
+                        self.util.display_user_nfts(username)
+
                     elif choice == 6:
                         username = input("Enter the username of the user you want to assign carbon credits : ")
                         activities = self.controller.get_activities_to_be_processed_by_username(username)
@@ -375,7 +379,7 @@ class CommandLineInterface:
                             print(Fore.GREEN + "Assignment completed!" + Style.RESET_ALL)
                         else:
                             print(Fore.RED + "Operation cancelled!" + Style.RESET_ALL)
-                        
+
                     elif choice == 8:
                         username = input("Enter the username of the user you want to see carbon credits balance: ")
                         self.util.view_user_balance(username)
@@ -412,10 +416,10 @@ class CommandLineInterface:
             1: "View Profile",
             2: "Update Profile",
             3: "Change Password",
-            4: f"{'Create' if role == 'FARMER' else 'Update'} NFT",
+            4: f"{'Create' if role == 'FARMER' else 'Update'} Product NFT",
             5: "View My Carbon Credits balance",
-            6: "View My NFTs",
-            7: "Exchange NFT",
+            6: "View My Product NFTs",
+            7: "Exchange Product NFT",
             8: "Log out"
         }
         while True:

@@ -125,6 +125,7 @@ class DatabaseOperations:
                         name TEXT NOT NULL,
                         category TEXT CHECK(category IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
                         co2Emission INTEGER NOT NULL,
+                        nftID INTEGER NOT NULL,
                         harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
                         );''')
@@ -167,10 +168,10 @@ class DatabaseOperations:
                             ('Solar panel investment', 'farmer_user', 0, 1, 50.0),
                             ('Electric vehicle implementation', 'carrier_user', 0, 2, 30.5);''')
 
-        self.cur.execute('''INSERT INTO Products (name, category, co2Emission) VALUES
-                            ('Apple', 'FRUIT', 10),
-                            ('Beef', 'MEAT', 50),
-                            ('Cheese', 'DAIRY', 20);''')
+        self.cur.execute('''INSERT INTO Products (name, category, co2Emission, nftID) VALUES
+                            ('Apple', 'FRUIT', 10, 0),
+                            ('Beef', 'MEAT', 50, 1),
+                            ('Cheese', 'DAIRY', 20, 2);''')
 
         self.conn.commit()
 
@@ -190,7 +191,7 @@ class DatabaseOperations:
         except sqlite3.IntegrityError as e:
             print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL)
             return -1
-        
+
     def update_creds(self, id, username=None, password=None, public_key=None, private_key=None, temp_code=None, temp_code_validity=None):
         """
         Updates an existing credentials record in the database.
@@ -199,40 +200,40 @@ class DatabaseOperations:
         try:
             query = "UPDATE Credentials SET "
             params = []
-            
+
             if username:
                 query += "username = ?, "
                 params.append(username)
-            
+
             if password:
                 hashed_passwd = self.hash_function(password)
                 query += "password = ?, "
                 params.append(hashed_passwd)
-                        
+
             if public_key:
                 query += "public_key = ?, "
                 params.append(public_key)
-            
+
             if private_key:
                 obfuscated_private_k = self.encrypt_private_k(private_key, password if password else self.get_current_password(id))
                 query += "private_key = ?, "
                 params.append(obfuscated_private_k)
-            
+
             if temp_code is not None:
                 query += "temp_code = ?, "
                 params.append(temp_code)
-            
+
             if temp_code_validity is not None:
                 query += "temp_code_validity = ?, "
                 params.append(temp_code_validity)
-            
+
             # Remove trailing comma and space
             query = query.rstrip(", ") + " WHERE id = ?"
             params.append(id)
-            
+
             self.cur.execute(query, params)
             self.conn.commit()
-            
+
             if self.cur.rowcount > 0:
                 print(Fore.GREEN + "Information updated correctly!\n" + Style.RESET_ALL)
                 return 0
@@ -251,7 +252,7 @@ class DatabaseOperations:
         try:
             self.cur.execute("DELETE FROM Credentials WHERE id = ?", (id,))
             self.conn.commit()
-            
+
             if self.cur.rowcount > 0:
                 print(Fore.GREEN + "Information deleted correctly!\n" + Style.RESET_ALL)
                 return 0
@@ -328,7 +329,7 @@ class DatabaseOperations:
         count_accounts = self.cur.fetchone()[0]
 
         if count_accounts == 0:
-            return 0 
+            return 0
         else:
             return -1
 
@@ -347,9 +348,9 @@ class DatabaseOperations:
         count_accounts = self.cur.fetchone()[0]
 
         if count_accounts == 0:
-            return 0 
+            return 0
         else:
-            return -1    
+            return -1
 
     def check_valid_licence(self, role, licence_number):
         """
@@ -357,7 +358,7 @@ class DatabaseOperations:
         """
         self.cur.execute("SELECT COUNT(*) FROM Licences WHERE type = ? AND licence_number = ?", (role, licence_number))
         return self.cur.fetchone()[0] > 0
-    
+
     def register_licences(self, type, licence_number):
         """
         Registers a new licence in the database.
@@ -382,11 +383,11 @@ class DatabaseOperations:
         try:
             query = "UPDATE Licences SET "
             params = []
-            
+
             if type is not None:
                 query += "type = ?, "
                 params.append(type)
-            
+
             if licence_number is not None:
                 query += "licence_number = ?, "
                 params.append(licence_number)
@@ -431,7 +432,7 @@ class DatabaseOperations:
             print(Fore.RED + f'Error deleting licence: {e}' + Style.RESET_ALL)
             return -1
 
-   
+
 
     def get_credentials(self):
         self.cur.execute("SELECT * FROM Credentials")
@@ -478,36 +479,36 @@ class DatabaseOperations:
         Deletes an account record from the database.
         """
         try:
-           self.cur.execute("DELETE FROM Accounts WHERE id = ?", (id,))
-           self.conn.commit()
-           return 0
+            self.cur.execute("DELETE FROM Accounts WHERE id = ?", (id,))
+            self.conn.commit()
+            return 0
         except sqlite3.Error:
-           return -1
+            return -1
 
     def register_account_activities(self, account_id, activity_id):
         """
           Inserts a new account-activity association.
         """
         try:
-          self.cur.execute("INSERT INTO Accounts_Activities (account_id, activity_id) VALUES (?, ?)", 
-                         (account_id, activity_id))
-          self.conn.commit()
-          return 0
+            self.cur.execute("INSERT INTO Accounts_Activities (account_id, activity_id) VALUES (?, ?)",
+                           (account_id, activity_id))
+            self.conn.commit()
+            return 0
         except sqlite3.IntegrityError:
-          return -1      
-    
+            return -1
+
     def update_account_activities(self, record_id, account_id, activity_id):
         """
         Updates an existing account-activity association.
         """
         try:
-            self.cur.execute("UPDATE Accounts_Activities SET account_id = ?, activity_id = ? WHERE id = ?", 
+            self.cur.execute("UPDATE Accounts_Activities SET account_id = ?, activity_id = ? WHERE id = ?",
                          (account_id, activity_id, record_id))
             self.conn.commit()
             return 0
         except sqlite3.IntegrityError:
             return -1
-        
+
     def delete_account_activities(self, record_id):
         """
         Deletes an account-activity association.
@@ -524,41 +525,41 @@ class DatabaseOperations:
         Inserts a new activity record into the database.
         """
         try:
-           self.cur.execute("""
+            self.cur.execute("""
             INSERT INTO Activities (type, description) 
-            VALUES (?, ?)""", 
-            (type, description))
-           self.conn.commit()
-           return 0
+            VALUES (?, ?)""",
+             (type, description))
+            self.conn.commit()
+            return 0
         except sqlite3.IntegrityError:
-           return -1
+            return -1
 
     def update_activities(self, id, type, description):
         """
          Updates an existing activity record in the database.
         """
         try:
-           self.cur.execute("""
+            self.cur.execute("""
             UPDATE Activities 
             SET type = ?, description = ? 
             WHERE id = ?""",
-            (type, description, id))
-           self.conn.commit()
-           return 0
+             (type, description, id))
+            self.conn.commit()
+            return 0
         except sqlite3.Error:
-           return -1
+            return -1
 
     def delete_activities(self, id):
         """
         Deletes an activity record from the database.
         """
         try:
-           self.cur.execute("DELETE FROM Activities WHERE id = ?", (id,))
-           self.conn.commit()
-           return 0
+            self.cur.execute("DELETE FROM Activities WHERE id = ?", (id,))
+            self.conn.commit()
+            return 0
         except sqlite3.Error:
-           return -1
-   
+            return -1
+
 
     def register_cron_activity(self, description, accepted, activity_id, co2_reduction):
         """
@@ -584,19 +585,19 @@ class DatabaseOperations:
         try:
             query = "UPDATE Cron_Activities SET "
             params = []
-            
+
             if description is not None:
                 query += "description = ?, "
                 params.append(description)
-            
+
             if accepted is not None:
                 query += "accepted = ?, "
                 params.append(accepted)
-            
+
             if activity_id is not None:
                 query += "activity_id = ?, "
                 params.append(activity_id)
-            
+
             if co2_reduction is not None:
                 query += "co2_reduction = ?, "
                 params.append(co2_reduction)
@@ -641,12 +642,12 @@ class DatabaseOperations:
             print(Fore.RED + f'Error deleting cron activity: {e}' + Style.RESET_ALL)
             return -1
 
-    def insert_product(self, name, category, co2Emission):
+    def insert_product(self, name, category, co2Emission, nft_token_id):
         try:
             self.cur.execute("""
-                INSERT INTO Products (name, category, co2Emission)
-                VALUES (?, ?, ?)""",
-                (name, category, co2Emission))
+                INSERT INTO Products (name, category, co2Emission, nftID)
+                VALUES (?, ?, ?, ?)""",
+                (name, category, co2Emission, nft_token_id))
             self.conn.commit()
             return 0
         except sqlite3.IntegrityError:
@@ -657,26 +658,26 @@ class DatabaseOperations:
         Updates the details of an existing product in the Products table.
         """
         try:
-           query = "UPDATE Products SET "
-           params = []
+            query = "UPDATE Products SET "
+            params = []
 
-           if co2Emission is not None:
-               query += "co2Emission = ?, "
-               params.append(co2Emission)
-                
-           # Rimuove la virgola finale e aggiunge la WHERE
-           query = query.rstrip(", ") + " WHERE id = ?"
-           params.append(product_id)
+            if co2Emission is not None:
+                query += "co2Emission = ?, "
+                params.append(co2Emission)
 
-           self.cur.execute(query, params)
-           self.conn.commit()
+            # Rimuove la virgola finale e aggiunge la WHERE
+            query = query.rstrip(", ") + " WHERE nftID = ?"
+            params.append(product_id)
 
-           if self.cur.rowcount > 0:
-               print(Fore.GREEN + "Product emissions/sensor updated successfully!\n" + Style.RESET_ALL)
-               return 0
-           else:
-               print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
-               return -1
+            self.cur.execute(query, params)
+            self.conn.commit()
+
+            if self.cur.rowcount > 0:
+                print(Fore.GREEN + "Product emissions updated successfully!\n" + Style.RESET_ALL)
+                return 0
+            else:
+                print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
+                return -1
 
         except sqlite3.Error as e:
             print(Fore.RED + f"Error updating product: {e}" + Style.RESET_ALL)
@@ -707,7 +708,7 @@ class DatabaseOperations:
             hashed_passwd = hashlib.scrypt(password.encode(), salt=bytes.fromhex(params[1]), n=2, r=8, p=1, dklen=64)
             return hashed_passwd.hex() == params[0]
         return False
-    
+
     def get_creds_by_username(self, username):
         """
         Retrieves a user's credentials from the Credentials table based on their username.
@@ -729,14 +730,14 @@ class DatabaseOperations:
 
     def change_password(self, username, new_pass):
         #if self.check_credentials(username, old_pass): #secondo me non ha senso farlo due volte quindi lo levo
-            new_hash = self.hash_function(new_pass)
-            try:
-                self.cur.execute("UPDATE Credentials SET password = ? WHERE username = ?", (new_hash, username))
-                self.conn.commit()
-                return 0
-            except Exception:
-                return -1
-        #return -1
+        new_hash = self.hash_function(new_pass)
+        try:
+            self.cur.execute("UPDATE Credentials SET password = ? WHERE username = ?", (new_hash, username))
+            self.conn.commit()
+            return 0
+        except Exception:
+            return -1
+    #return -1
 
     def key_exists(self, public_key, private_key):
         """
@@ -759,7 +760,7 @@ class DatabaseOperations:
             return len(existing_users) > 0
         except Exception as e:
             print(Fore.RED + f"An error occurred: {e}" + Style.RESET_ALL)
-            return False 
+            return False
 
     def get_public_key_by_username(self, username):
         """
@@ -817,8 +818,8 @@ class DatabaseOperations:
         Retrieves all activities that have not been processed yet.
         """
         self.cur.execute("SELECT * FROM Cron_Activities WHERE state = 0")
-        
-        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction) 
+
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
                       for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
 
         return activities
@@ -831,7 +832,7 @@ class DatabaseOperations:
 
         activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
                       for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
-        
+
         return activities
 
     def get_activities_to_be_processed_by_username(self, username):
@@ -842,7 +843,7 @@ class DatabaseOperations:
 
         activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
                       for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
-        
+
         return activities
 
     def get_co2Amount_by_activity(self, activity_id):

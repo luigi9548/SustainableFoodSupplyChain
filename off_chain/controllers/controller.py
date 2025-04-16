@@ -181,8 +181,8 @@ class Controller:
     def get_users(self):
         return self.db_ops.get_users()
 
-    def create_product(self, name, category, co2Emission):
-        return self.db_ops.insert_product(name, category, co2Emission)
+    def create_product(self, name, category, co2Emission, nft_token_id):
+        return self.db_ops.insert_product(name, category, co2Emission, nft_token_id)
 
     def update_product(self, product_id, co2Emission):
         return self.db_ops.update_product(product_id, co2Emission)

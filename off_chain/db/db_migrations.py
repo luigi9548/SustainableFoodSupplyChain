@@ -103,6 +103,7 @@ cur.execute('''CREATE TABLE Products (
             name TEXT NOT NULL,
             category TEXT CHECK(category IN ('FRUIT', 'MEAT', 'DAIRY')) NOT NULL,
             co2Emission INTEGER NOT NULL,
+            nftID INTEGER NOT NULL,
             harvestDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             update_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             );''')

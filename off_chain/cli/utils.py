@@ -280,7 +280,9 @@ class Utils:
             from_address=from_address
         )
 
-        result = self.controller.create_product(name, category, emissions)
+        nft_token_id = self.act_controller.get_last_id()
+
+        result = self.controller.create_product(name, category, emissions, nft_token_id)
 
         if result == 0:
             print(Fore.GREEN + 'Product created correctly!\n' + Style.RESET_ALL)
@@ -299,7 +301,7 @@ class Utils:
         """
         while True:
             nft_id = input("ID ntf to modify: ").strip()
-            if nft_id.isdigit() and int(nft_id) > 0:
+            if nft_id.isdigit() and int(nft_id) >= 0:
                 nft_id = int(nft_id)
                 break
             else:
@@ -308,15 +310,10 @@ class Utils:
         emissions = random.randint(1,100)
 
         # Chiamata alla funzione che interagisce con lo smart contract
-        self.act_controller.update_nft(nft_id, emissions, from_address)
+        self.act_controller.update_nft(nft_id, emissions, from_address=from_address)
 
         emissionsTot = self.act_controller.get_emissions_by_nft_id(nft_id)
         result = self.controller.update_product(nft_id, emissionsTot)
-
-        if result == 0:
-            print(Fore.GREEN + 'Product created correctly!\n' + Style.RESET_ALL)
-        else:
-            print(Fore.RED + 'Error creating information!\n' + Style.RESET_ALL)
 
     def transfer_nft(self, username, role):
         """
