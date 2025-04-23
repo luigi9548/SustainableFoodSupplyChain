@@ -199,6 +199,9 @@ class Controller:
     def get_activities_to_be_processed_by_username(self, username):
         return self.db_ops.get_activities_to_be_processed_by_username(username)
 
+    def get_activities_processed_by_username(self, username):
+        return self.db_ops.get_activities_processed_by_username(username)
+
     def get_co2Amount_by_activity(self, activity_id):
         return self.db_ops.get_co2Amount_by_activity(activity_id)
 
@@ -209,4 +212,16 @@ class Controller:
             return self.db_ops.update_activity_state(activitie_id, 1)
         elif state == 1:
             return self.db_ops.update_activity_state(activitie_id, 2)
+
+    def get_helpers(self):
+        return self.db_ops.get_helpers()
+
+    def insert_transaction(self, username_from, username_to, amount, type, tx_hash):
+        return self.db_ops.insert_transaction(username_from, username_to, amount, type, tx_hash)
+
+    def get_user_transactions(self, user_username):
+        return self.db_ops.get_user_transactions(user_username)
+
+    def get_username_by_public_key(self, public_key):
+        return self.db_ops.get_username_by_public_key(public_key)
     

@@ -77,6 +77,16 @@ cur.execute('''CREATE TABLE IF NOT EXISTS Accounts_Activities (
                FOREIGN KEY (activity_id) REFERENCES Activities(id)
                );''')
 
+cur.execute('''CREATE TABLE Transactions (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               username_from TEXT,
+               username_to TEXT,
+               amount INTEGER NOT NULL,
+               type TEXT CHECK(type IN ('MINT', 'BURN', 'TRANSFER')) NOT NULL,
+               tx_hash TEXT,
+               timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+               );
+               ''')
 
 cur.execute('''CREATE TABLE IF NOT EXISTS Cron_Activities (
                id INTEGER PRIMARY KEY AUTOINCREMENT,

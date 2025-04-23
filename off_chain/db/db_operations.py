@@ -10,6 +10,7 @@ from config import config
 from models.accounts import Accounts
 from models.cron_activities import Cron_Activities
 from models.credentials import Credentials
+from models.transaction import Transaction
 
 class DatabaseOperations:
     """
@@ -30,13 +31,14 @@ class DatabaseOperations:
         Creates necessary tables in the database if they are not already present.
         This ensures that the database schema is prepared before any operations are performed.
         """
-        self.cur.execute("DROP TABLE IF EXISTS Credentials")
-        self.cur.execute("DROP TABLE IF EXISTS Accounts")
+        #self.cur.execute("DROP TABLE IF EXISTS Credentials")
+        #self.cur.execute("DROP TABLE IF EXISTS Accounts")
         self.cur.execute("DROP TABLE IF EXISTS Activities")
         self.cur.execute("DROP TABLE IF EXISTS Accounts_Activities")
         self.cur.execute("DROP TABLE IF EXISTS Cron_Activities")
         self.cur.execute("DROP TABLE IF EXISTS Licences")
         self.cur.execute("DROP TABLE IF EXISTS Products")
+        self.cur.execute("DROP TABLE IF EXISTS Transactions")
 
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Credentials (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -138,6 +140,17 @@ class DatabaseOperations:
                         UPDATE Products SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
                         END;''')
 
+        self.cur.execute('''CREATE TABLE Transactions (
+                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+                         username_from TEXT,
+                         username_to TEXT,
+                         amount INTEGER NOT NULL,
+                         type TEXT CHECK(type IN ('MINT', 'BURN', 'TRANSFER')) NOT NULL,
+                         tx_hash TEXT,
+                         timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                         );
+                         ''')
+
         self.conn.commit()
 
     def insert_test_records(self):
@@ -147,14 +160,6 @@ class DatabaseOperations:
                             ('SELLER', '2003'),
                             ('PRODUCER', '2004'),
                             ('CERTIFIER', '2005');''')
-
-        self.cur.execute('''INSERT INTO Credentials (username, password, public_key, private_key) VALUES
-                            ('farmer_user', 'N5K+n8DAAmZKfbqK', '0xd141E7900D4f756f492e463957BC0e68202CbD81', '0x30c4e61c6f0e1803219ecdccdf576086f8f4e128d1911f68db95d05fd5fb5a49'),
-                            ('carrier_user', 'd3bHfBVNydAh+5yy', '0x939878DE3937a84c413Dc4ADE09440c00F151911', '0x164f9c762d3cec7ba488e8488e5052abd413c5418db1197719ad00f9a4d76a00');''')
-
-        self.cur.execute('''INSERT INTO Accounts (username, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail) VALUES
-                            ('farmer_user', 'FARMER', 'John', 1, 'Doe', '1980-05-10', 'Milan', 'Rome', '1234567890', 'john@example.com'),
-                            ('carrier_user', 'CARRIER', 'Jane', 2, 'Smith', '1985-08-20', 'Paris', 'London', '0987654321', 'jane@example.com');''')
 
         self.cur.execute('''INSERT INTO Activities (type, description) VALUES
                             ('investment in a project for reduction', 'Investing in solar panels'),
@@ -846,6 +851,17 @@ class DatabaseOperations:
 
         return activities
 
+    def get_activities_processed_by_username(self, username):
+        """
+        Retrieves all activities to be elaborated for a given username.
+        """
+        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ? AND state = 1", (username,))
+
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
+                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
+
+        return activities
+
     def get_co2Amount_by_activity(self, activity_id):
         """
         Retrieves the total amount of CO2 reduced of the activitie.
@@ -876,3 +892,49 @@ class DatabaseOperations:
             return 0
         except sqlite3.Error:
             return -1
+
+    def get_helpers(self):
+        """
+        Retrieves all public_keys of potential helpers.
+        """
+        self.cur.execute("""
+                         SELECT c.public_key
+                         FROM Credentials c
+                         JOIN Accounts a ON c.username = a.username
+                         WHERE a.type != 'CERTIFIER'
+                         """)
+        public_keys = [row[0] for row in self.cur.fetchall()]
+
+        return public_keys
+
+    def insert_transaction(self, username_from, username_to, amount, type, tx_hash):
+        try:
+            self.cur.execute("""
+                INSERT INTO Transactions (username_from, username_to, amount, type, tx_hash)
+                VALUES (?, ?, ?, ?, ?)
+                """, (username_from, username_to, amount, type, tx_hash))
+            self.conn.commit()
+            return 0
+        except sqlite3.IntegrityError:
+            return -1
+
+    def get_user_transactions(self, user_username):
+        self.cur.execute("""
+                            SELECT * FROM Transactions
+                            WHERE username_from = ? OR username_to = ?
+                            ORDER BY timestamp DESC
+                            """, (user_username, user_username))
+        transactions = [Transaction(id, username_from, username_to, amount, type, tx_hash, timestamp)
+                        for id, username_from, username_to, amount, type, tx_hash, timestamp in self.cur.fetchall()]
+
+        return transactions
+
+    def get_username_by_public_key(self, public_key):
+        """
+        Retrieves the username associated with a given public key.
+        """
+        self.cur.execute(
+            "SELECT username FROM Credentials WHERE public_key = ?", (public_key,))
+        result = self.cur.fetchone()
+        return result[0] if result else None
+

@@ -3,7 +3,6 @@ import os
 import time
 import json
 from colorama import Fore, Style, init
-from pydantic.types import T
 from controllers.deploy_controller import DeployController
 from session.logging import log_msg, log_error
 from web3 import Web3
@@ -392,7 +391,6 @@ class ActionController:
         owner_address = self.contracts[contract_name].functions.getOwner().call()
         tx_hash = self.contracts[contract_name].functions.authorizeEditor(from_address).transact({'from': owner_address})
         self.w3.eth.wait_for_transaction_receipt(tx_hash)
-
         return self.write_data('mint', contract_name, from_address, *args)
 
     def get_balance(self, user_key, contract_name='CarbonCreditToken'):
@@ -407,3 +405,36 @@ class ActionController:
             user balance.
         """
         return self.read_data("balanceOf", contract_name, user_key)
+
+    def transfer_carbon_credits(self, *args, from_address, contract_name = 'CarbonCreditToken'):
+        """
+        Transfers carbon credits from one user to another.
+    
+        Args:
+            *args: Additional arguments required by the contract function.
+            from_address (str): The Ethereum address to send the transaction from.
+            contract_name (str): The name of the contract to use. Default is 'CarbonCreditToken'.
+    
+        Returns:
+            The transaction receipt object.
+        """
+        owner_address = self.contracts[contract_name].functions.getOwner().call()
+        tx_hash = self.contracts[contract_name].functions.authorizeEditor(from_address).transact({'from': owner_address})
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        return self.write_data("transferCredits", contract_name, from_address, *args)
+
+    def remove_carbon_credits(self, *args, from_address, contract_name = 'CarbonCreditToken'):
+        """
+        remove carbon credits to a user.
+        Args:
+            amount (int): The amount of carbon credits to remove.
+            from_address (str): The Ethereum address to send the transaction from.
+            contract_name (str): The name of the contract to use. Default is 'CarbonCreditToken'.
+        Returns:
+            The transaction receipt object.
+        """
+        owner_address = self.contracts[contract_name].functions.getOwner().call()
+        tx_hash = self.contracts[contract_name].functions.authorizeEditor(from_address).transact({'from': owner_address})
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        return self.write_data('burn', contract_name, from_address, *args)

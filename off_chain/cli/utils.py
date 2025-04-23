@@ -216,6 +216,9 @@ class Utils:
         else:
             print("No activities to be processed.\n")
 
+    def is_valid_activity_id(self, activity_id, activities):
+        return any(act.get_id() == activity_id for act in activities)
+
     def view_userActivities(self, username, activities):
         """
         This method retrieves and displays the activities of the current user.
@@ -224,7 +227,6 @@ class Utils:
             username (str): The username of the user whose activities are to be viewed.
             activities (list): A list of activities associated with the user.
         """
-        activities = self.controller.get_activities_by_username(username)
         print(Fore.CYAN + username + " activities:" + Style.RESET_ALL)
         print("\n")
         if activities:
@@ -398,20 +400,20 @@ class Utils:
 
         print("-" * 82)
 
-    def assign_carbon_credits(self, username, activity_id, from_address_actor):
+    def assign_carbon_credits(self, username, co2Amount, activity_id, from_address_actor):
         """
         This method assigns carbon credits to users based on their activities.
 
         Args:
             username (str): The username of the user to whom carbon credits are to be assigned.
+            co2Amount (int): The amount of carbon credits to be assigned.
             activity_id (int): The ID of the activity for which carbon credits are to be assigned.
             from_address_actor (str): The public key of the actor assigning the carbon credits.
         """
         address_to = self.controller.get_public_key_by_username(username)
-        co2Amount = self.controller.get_co2Amount_by_activity(activity_id)
-        co2AmountConverted = round(co2Amount)
-        self.act_controller.assign_carbon_credits(address_to, co2AmountConverted, from_address=from_address_actor)
+        transaction_receipt = self.act_controller.assign_carbon_credits(address_to, co2Amount, from_address=from_address_actor)
         self.controller.update_activity_state(activity_id)
+        return transaction_receipt
 
     def view_user_balance(self, username):
         """
@@ -424,3 +426,56 @@ class Utils:
         balance = self.act_controller.get_balance(user_key)
         print(f"{username} balance: {balance}")
         input("\nPress Enter to exit\n")
+
+    def find_helper_in_supply_chain(self, balance, creditor_pk):
+        """
+        This method finds and returns the helper in the supply chain 
+        with the highest carbon credit balance that can cover the deficit.
+
+        Args:
+            balance (int): The amount of carbon credits in deficit.
+            creditor_pk (str): The public key of the creditor.
+
+        Returns:
+            str or None: The public key of the helper, or None if none can help.
+        """
+        helpers_public_keys = self.controller.get_helpers()
+
+        if creditor_pk in helpers_public_keys:
+            helpers_public_keys.remove(creditor_pk)
+
+        helper_candidates = []
+
+        for public_key in helpers_public_keys:
+            amount = self.act_controller.get_balance(public_key)
+            if amount >= balance:
+                helper_candidates.append((public_key, amount))
+
+        if not helper_candidates:
+            return None
+
+        best_helper = max(helper_candidates, key=lambda x: x[1])
+        return best_helper[0]
+
+    def view_user_transactions(self, username, tranasactions):
+        """
+        This method retrieves and displays the transactions of the current user.
+
+        Args:
+            username (str): The username of the user whose transactions are to be viewed.
+            tranasactions (list): A list of tranasactions associated with the user.
+        """
+        print(Fore.CYAN + username + " tranasactions:" + Style.RESET_ALL)
+        print("\n")
+        if tranasactions:
+            for tran in tranasactions:
+                print("Transaction ID: ", tran.get_id())
+                print("Transaction sender: ", tran.get_username_from())
+                print("Transaction recipient: ", tran.get_username_to())
+                print("Transaction amount: ", tran.get_amount())
+                print("Transaction type: ", tran.get_type())
+                print("Transaction hash: ", tran.get_tx_hash())
+                print("Transaction creation date: ", tran.get_timestamp())
+                print("\n")
+        else:
+            print("No transactions found.\n")

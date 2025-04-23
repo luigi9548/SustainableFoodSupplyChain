@@ -98,6 +98,7 @@ class CommandLineInterface:
                         self.certifier_menu(username)
                     else:
                         self.common_menu_options(role, username)
+                        self.session.reset_session()
 
                 elif login_code == -2:
                     print(Fore.RED + '\nWrong Credentials\n' + Style.RESET_ALL)
@@ -331,9 +332,10 @@ class CommandLineInterface:
             7: "Remove Carbon credits",
             8: "View user carbon credits balance",
             9: "View profile",
-            10: "Update profile",
-            11: "Change password",
-            12: "Log out"
+            10: "View my transactions",
+            11: "Update profile",
+            12: "Change password",
+            13: "Log out"
         }
 
         while True:
@@ -348,52 +350,104 @@ class CommandLineInterface:
                         self.util.view_activitiesToBeProcessed()
 
                     elif choice == 2:
-                        username = input("Enter the username of the user whose activities you want to view: ")
-                        activities = self.controller.get_activities_by_username(username)
-                        self.util.view_userActivities(username, activities)
+                        username_input = input("Enter the username of the user whose activities you want to view: ")
+                        activities = self.controller.get_activities_by_username(username_input)
+                        self.util.view_userActivities(username_input, activities)
 
                     elif choice == 3:
                         self.util.view_usersView()
 
                     elif choice == 4:
-                        username = input("Enter the username of the user whose profile you want to view: ")
-                        self.util.view_userView(username, "\nUSER INFO\n")
+                        username_input = input("Enter the username of the user whose profile you want to view: ")
+                        self.util.view_userView(username_input, "\nUSER INFO\n")
 
                     elif choice == 5:
-                        username = input("Enter the username of the user whose products you want to view: ")
-                        self.util.display_user_nfts(username)
+                        username_input = input("Enter the username of the user whose products you want to view: ")
+                        self.util.display_user_nfts(username_input)
 
                     elif choice == 6:
-                        username = input("Enter the username of the user you want to assign carbon credits : ")
-                        activities = self.controller.get_activities_to_be_processed_by_username(username)
+                        username_input = input("Enter the username of the user you want to assign carbon credits : ")
+                        activities = self.controller.get_activities_to_be_processed_by_username(username_input)
                         if not activities:
                             print(Fore.RED + "No activities found for this user." + Style.RESET_ALL)
                             continue
-                        self.util.view_userActivities(username, activities)
+                        self.util.view_userActivities(username_input, activities)
                         activity_id = input("Enter the activity ID you want to assign carbon credits to: ")
+                        if not self.util.is_valid_activity_id(int(activity_id), activities):
+                            print(Fore.RED + "Activity not found for this user." + Style.RESET_ALL)
+                            continue
                         msg = "Do you really want to assign carbon credits to activity ID " + activity_id + " ? (Y/n): "
                         confirm = input(msg).strip().upper()
                         if confirm == 'Y':
-                            from_address_actor = self.controller.get_public_key_by_username(self.session.get_user().get_username())
-                            self.util.assign_carbon_credits(username, activity_id, from_address_actor)
+                            from_address_actor = self.controller.get_public_key_by_username(username)
+                            co2Amount = self.controller.get_co2Amount_by_activity(activity_id)
+                            co2AmountConverted = round(co2Amount)
+                            transaction_receipt = self.util.assign_carbon_credits(username_input, co2AmountConverted, activity_id, from_address_actor)
+                            self.controller.insert_transaction(username, username_input, co2AmountConverted, 'MINT', transaction_receipt.transactionHash.hex())
                             print(Fore.GREEN + "Assignment completed!" + Style.RESET_ALL)
                         else:
                             print(Fore.RED + "Operation cancelled!" + Style.RESET_ALL)
 
+                    elif choice == 7:
+                        username_input = input("Enter the username of the user you want to remove carbon credits : ")
+                        activities = self.controller.get_activities_processed_by_username(username_input)
+                        if not activities:
+                            print(Fore.RED + "No activities found for this user." + Style.RESET_ALL)
+                            continue
+                        self.util.view_userActivities(username_input, activities)
+                        activity_id = input("Enter the activity ID you want to remove carbon credits to: ")
+                        if not self.util.is_valid_activity_id(int(activity_id), activities):
+                            print(Fore.RED + "Activity not found for this user." + Style.RESET_ALL)
+                            continue
+                        amount_to_burn = input("Enter the amount of carbon credits to remove: ")
+                        msg = "Do you really want to remove " + amount_to_burn + " carbon credits to activity ID " + activity_id + " ? (Y/n): "
+                        confirm = input(msg).strip().upper()
+                        if confirm == 'Y':
+                            from_address_actor = self.controller.get_public_key_by_username(username)
+                            address_to = self.controller.get_public_key_by_username(username_input)
+                            user_balance = self.act_controller.get_balance(address_to)
+                            if user_balance < int(amount_to_burn):
+                                print(Fore.RED + "Insufficient balance. Searching for helpers..." + Style.RESET_ALL)
+                                deficit = int(amount_to_burn) - user_balance
+                                helper_public_key = self.util.find_helper_in_supply_chain(deficit, address_to)
+                                if (helper_public_key is None):
+                                    print(Fore.RED + "No helpers found." + Style.RESET_ALL)
+                                    continue
+                                else:
+                                    helper_username = self.controller.get_username_by_public_key(helper_public_key)
+                                    print(Fore.GREEN + "Helper found. Transferring carbon credits " + helper_username + Style.RESET_ALL)
+                                    transaction_receipt_transfer = self.act_controller.transfer_carbon_credits(address_to, deficit, from_address=helper_public_key)
+                                    self.controller.insert_transaction(helper_username, username_input, amount_to_burn, 'TRANSFER', transaction_receipt_transfer.transactionHash.hex())
+                                # dopo aver compensato
+                                transaction_receipt_burn = self.act_controller.remove_carbon_credits(address_to, int(amount_to_burn), from_address=from_address_actor)
+                                self.controller.update_activity_state(activity_id)
+                                self.controller.insert_transaction(username, username_input, amount_to_burn, 'BURN', transaction_receipt_burn.transactionHash.hex())
+                                print(Fore.GREEN + "Carbon credits removed" + Style.RESET_ALL)
+                            else:
+                                transaction_receipt_burn = self.act_controller.remove_carbon_credits(address_to, int(amount_to_burn), from_address=from_address_actor)
+                                self.controller.update_activity_state(activity_id)
+                                self.controller.insert_transaction(username, username_input, amount_to_burn, 'BURN', transaction_receipt_burn.transactionHash.hex())
+                                print(Fore.GREEN + "Carbon credits removed" + Style.RESET_ALL)
+                        else:
+                            print(Fore.RED + "Operation cancelled!" + Style.RESET_ALL)
                     elif choice == 8:
-                        username = input("Enter the username of the user you want to see carbon credits balance: ")
-                        self.util.view_user_balance(username)
+                        username_input = input("Enter the username of the user you want to see carbon credits balance: ")
+                        self.util.view_user_balance(username_input)
 
                     elif choice == 9:
                         self.util.view_userView(username, "\nCERTIFIER INFO\n")
 
                     elif choice == 10:
-                        self.util.update_profile(username, "CERTIFIER")
+                        transactions = self.controller.get_user_transactions(username)
+                        self.util.view_user_transactions(username, transactions)
 
                     elif choice == 11:
-                        self.util.change_passwd(username)
+                        self.util.update_profile(username, "CERTIFIER")
 
                     elif choice == 12:
+                        self.util.change_passwd(username)
+
+                    elif choice == 13:
                         confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
                         if confirm == 'Y':
                             print(Fore.CYAN + "\nThank you for using the service!\n" + Style.RESET_ALL)
@@ -417,10 +471,12 @@ class CommandLineInterface:
             2: "Update Profile",
             3: "Change Password",
             4: f"{'Create' if role == 'FARMER' else 'Update'} Product NFT",
-            5: "View My Carbon Credits balance",
-            6: "View My Product NFTs",
-            7: "Exchange Product NFT",
-            8: "Log out"
+            5: "View my activities",
+            6: "View my transactions",
+            7: "View My Carbon Credits balance",
+            8: "View My Product NFTs",
+            9: "Exchange Product NFT",
+            10: "Log out"
         }
         while True:
             print(Fore.CYAN + f"\n{role} MENU" + Style.RESET_ALL)
@@ -446,14 +502,20 @@ class CommandLineInterface:
                         else:
                             self.util.update_nft(username)
                     elif choice == 5:
-                        self.util.view_user_balance(username)
+                        activities = self.controller.get_activities_by_username(username)
+                        self.util.view_userActivities(username, activities)
                     elif choice == 6:
+                        transactions = self.controller.get_user_transactions(username)
+                        self.util.view_user_transactions(username, transactions)
+                    elif choice == 7:
+                        self.util.view_user_balance(username)
+                    elif choice == 8:
                         # View user's NFTs
                         self.util.display_user_nfts(username)
-                    elif choice == 7:
+                    elif choice == 9:
                         # Exchange NFT for all roles
                         self.util.transfer_nft(username, role)
-                    elif choice == 8:
+                    elif choice == 10:
                         # Log out
                         confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
                         if confirm == 'Y':

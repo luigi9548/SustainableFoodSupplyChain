@@ -1,4 +1,3 @@
-from models.model_base import Model
 from colorama import Fore, Style, init
 from models.model_base import Model
 
