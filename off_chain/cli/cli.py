@@ -37,41 +37,40 @@ class CommandLineInterface:
             3: 'Esci!',
         }
 
-
-    # lo togliamo ?
     def print_menu(self):
-        """Displays the menu and handles user choices."""
-        print(Fore.CYAN + r"""
-     ███████╗██╗   ██╗██████╗ ██████╗ ██╗  ██╗   ██╗ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗
-     ██╔════╝██║   ██║██╔══██╗██╔══██╗██║  ╚██╗ ██╔╝██╔════╝██║  ██║██╔══██╗██║████╗  ██║
-     ███████╗██║   ██║██████╔╝██████╔╝██║   ╚████╔╝ ██║     ███████║███████║██║██╔██╗ ██║
-     ╚════██║██║   ██║██╔═══╝ ██╔═══╝ ██║    ╚██╔╝  ██║     ██╔══██║██╔══██║██║██║╚██╗██║
-     ███████║╚██████╔╝██║     ██║     ███████╗██║   ╚██████╗██║  ██║██║  ██║██║██║ ╚████║
-     ╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
-    """ + Style.RESET_ALL)
-        for key, value in self.menu.items():
-            print(key, '--', value)
+        while True:
+            """Displays the menu and handles user choices."""
+            print(Fore.CYAN + r"""
+         ███████╗██╗   ██╗██████╗ ██████╗ ██╗  ██╗   ██╗ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗
+         ██╔════╝██║   ██║██╔══██╗██╔══██╗██║  ╚██╗ ██╔╝██╔════╝██║  ██║██╔══██╗██║████╗  ██║
+         ███████╗██║   ██║██████╔╝██████╔╝██║   ╚████╔╝ ██║     ███████║███████║██║██╔██╗ ██║
+         ╚════██║██║   ██║██╔═══╝ ██╔═══╝ ██║    ╚██╔╝  ██║     ██╔══██║██╔══██║██║██║╚██╗██║
+         ███████║╚██████╔╝██║     ██║     ███████╗██║   ╚██████╗██║  ██║██║  ██║██║██║ ╚████║
+         ╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
+        """ + Style.RESET_ALL)
+            for key, value in self.menu.items():
+                print(key, '--', value)
 
-        try:
-            choice = int(input('Scegli cosa fare: '))
+            try:
+                choice = int(input('Scegli cosa fare: '))
 
-            if choice == 1:
-                print('Registration')
-                self.registration_menu()
-            elif choice == 2:
-                print('Login')
-                res_code = self.login_menu()
-                if res_code == 1:
-                    self.print_menu()
+                if choice == 1:
+                    print('Registration')
+                    self.registration_menu()
+                elif choice == 2:
+                    print('Login')
+                    res_code = self.login_menu()
+                    if res_code == 1:
+                        self.print_menu()
 
-            elif choice == 3:
-                print('Esci!')
-                exit()
-            else:
-                print(Fore.RED + 'Wrong choice, insert a valid choise!' + Style.RESET_ALL)
+                elif choice == 3:
+                    print('Esci!')
+                    exit()
+                else:
+                    print(Fore.RED + 'Wrong choice, insert a valid choise!' + Style.RESET_ALL)
 
-        except ValueError:
-            print(Fore.RED + 'Incorrect input, insert a number!\n' + Style.RESET_ALL)
+            except ValueError:
+                print(Fore.RED + 'Incorrect input, insert a number!\n' + Style.RESET_ALL)
 
 
     def login_menu(self):
@@ -81,35 +80,33 @@ class CommandLineInterface:
         the Controller and grants access if authentication is successful. The method 
         handles authentication failures.
         """
+        if not self.controller.check_attempts() and self.session.get_timeout_left() < 0:
+            self.session.reset_attempts()
 
-        while True:
-            if not self.controller.check_attempts() and self.session.get_timeout_left() < 0:
-                self.session.reset_attempts()
+        if self.session.get_timeout_left() <= 0 and self.controller.check_attempts():
+            username = input('Insert username: ')
+            passwd = maskpass.askpass('Insert password: ', mask="*")
 
-            if self.session.get_timeout_left() <= 0 and self.controller.check_attempts():
-                username = input('Insert username: ')
-                passwd = maskpass.askpass('Insert password: ', mask="*")
+            login_code, role = self.controller.login(username, passwd)
 
-                login_code, role = self.controller.login(username, passwd)
+            if login_code == 1:
+                print(Fore.GREEN + '\nYou have succesfully logged in!\n' + Style.RESET_ALL)
+                if role == 'CERTIFIER':
+                    self.certifier_menu(username)
+                else:
+                    self.common_menu_options(role, username)
+                    self.session.reset_session()
 
-                if login_code == 1:
-                    print(Fore.GREEN + '\nYou have succesfully logged in!\n' + Style.RESET_ALL)
-                    if role == 'CERTIFIER':
-                        self.certifier_menu(username)
-                    else:
-                        self.common_menu_options(role, username)
-                        self.session.reset_session()
+            elif login_code == -2:
+                print(Fore.RED + '\nWrong Credentials\n' + Style.RESET_ALL)
+            elif login_code == -3:
+                print(Fore.RED + '\nToo many attempts\n' + Style.RESET_ALL)
+                return -1
 
-                elif login_code == -2:
-                    print(Fore.RED + '\nWrong Credentials\n' + Style.RESET_ALL)
-                elif login_code == -3:
-                    print(Fore.RED + '\nToo many attempts\n' + Style.RESET_ALL)
-                    return -1
-
-            else:
-                print(Fore.RED + '\nMax number of attemps reached\n' + Style.RESET_ALL)
-                print(Fore.RED + f'You will be in timeout for: {int(self.session.get_timeout_left())} seconds\n' + Style.RESET_ALL)
-                return -2
+        else:
+            print(Fore.RED + '\nMax number of attemps reached\n' + Style.RESET_ALL)
+            print(Fore.RED + f'You will be in timeout for: {int(self.session.get_timeout_left())} seconds\n' + Style.RESET_ALL)
+            return -2
 
 
     def registration_menu(self):
