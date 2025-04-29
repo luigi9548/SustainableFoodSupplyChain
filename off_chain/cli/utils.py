@@ -5,7 +5,6 @@ displaying data etc..
 
 import datetime
 import math
-import nt
 import re
 import click
 import getpass
