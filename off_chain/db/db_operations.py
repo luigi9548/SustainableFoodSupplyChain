@@ -490,25 +490,25 @@ class DatabaseOperations:
         except sqlite3.Error:
             return -1
 
-    def register_account_activities(self, account_id, activity_id):
+    def register_account_activities(self, username, activity_id):
         """
           Inserts a new account-activity association.
         """
         try:
-            self.cur.execute("INSERT INTO Accounts_Activities (account_id, activity_id) VALUES (?, ?)",
-                           (account_id, activity_id))
+            self.cur.execute("INSERT INTO Accounts_Activities (username, activity_id) VALUES (?, ?)",
+                           (username, activity_id))
             self.conn.commit()
             return 0
         except sqlite3.IntegrityError:
             return -1
 
-    def update_account_activities(self, record_id, account_id, activity_id):
+    def update_account_activities(self, record_id, username, activity_id):
         """
         Updates an existing account-activity association.
         """
         try:
-            self.cur.execute("UPDATE Accounts_Activities SET account_id = ?, activity_id = ? WHERE id = ?",
-                         (account_id, activity_id, record_id))
+            self.cur.execute("UPDATE Accounts_Activities SET username = ?, activity_id = ? WHERE id = ?",
+                         (username, activity_id, record_id))
             self.conn.commit()
             return 0
         except sqlite3.IntegrityError:
@@ -566,15 +566,15 @@ class DatabaseOperations:
             return -1
 
 
-    def register_cron_activity(self, description, accepted, activity_id, co2_reduction):
+    def register_cron_activity(self, description, username, state, activity_id, co2_reduction):
         """
         Registers a new cron activity in the database.
         """
         try:
             self.cur.execute("""
-                INSERT INTO Cron_Activities (description, accepted, activity_id, co2_reduction, update_datetime, creation_datetime)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)""",
-                (description, accepted, activity_id, co2_reduction)
+                INSERT INTO Cron_Activities (description, username, state, activity_id, co2_reduction)
+                VALUES (?, ?, ?, ?, ?)""",
+                (description, username, state, activity_id, co2_reduction)
             )
             self.conn.commit()
             return 0  # Success
@@ -582,7 +582,7 @@ class DatabaseOperations:
             print(Fore.RED + f'Error inserting cron activity: {e}' + Style.RESET_ALL)
             return -1  # Error
 
-    def update_cron_activity(self, id, description=None, accepted=None, activity_id=None, co2_reduction=None):
+    def update_cron_activity(self, id, description=None, username=None, state=None, activity_id=None, co2_reduction=None):
         """
         Updates an existing cron activity record.
         Only updates fields that are provided (non-None).
@@ -595,9 +595,13 @@ class DatabaseOperations:
                 query += "description = ?, "
                 params.append(description)
 
-            if accepted is not None:
+            if username is not None:
                 query += "accepted = ?, "
-                params.append(accepted)
+                params.append(username)
+
+            if state is not None:
+                query += "state = ?, "
+                params.append(state)
 
             if activity_id is not None:
                 query += "activity_id = ?, "
@@ -606,9 +610,6 @@ class DatabaseOperations:
             if co2_reduction is not None:
                 query += "co2_reduction = ?, "
                 params.append(co2_reduction)
-
-            # Always update the timestamp
-            query += "update_datetime = CURRENT_TIMESTAMP, "
 
             # Remove the last comma
             query = query.rstrip(", ") + " WHERE id = ?"
@@ -937,4 +938,3 @@ class DatabaseOperations:
             "SELECT username FROM Credentials WHERE public_key = ?", (public_key,))
         result = self.cur.fetchone()
         return result[0] if result else None
-

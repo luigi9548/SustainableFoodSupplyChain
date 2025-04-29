@@ -60,13 +60,13 @@ class Controller:
                 self.session.set_error_attempts_timeout(self.__timeout_timer)
             return -2, None
         else:
-            return -3, None   
+            return -3, None
 
     def check_attempts(self):
         if self.session.get_attempts() < self.__n_attempts_limit:
             return True
         else:
-            return False    
+            return False
 
     def insert_actor_info(self, role: str, username: str, name: str, lastname: str, actorLicense: int, residence: str, birthdayPlace: str, birthday: str, mail: str, phone: str):
         """
@@ -224,4 +224,12 @@ class Controller:
 
     def get_username_by_public_key(self, public_key):
         return self.db_ops.get_username_by_public_key(public_key)
-    
+
+    def register_activities(self, activity_type, description):
+        return self.db_ops.register_activities(activity_type, description)
+
+    def register_cron_activity(self, description, username, state, activity_id, co2_reduction):
+        return self.db_ops.register_cron_activity(description,  username, state, activity_id, co2_reduction)
+
+    def register_account_activities(self, username, activity_id):
+        return self.db_ops.register_account_activities(username, activity_id)
