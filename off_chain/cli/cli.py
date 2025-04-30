@@ -468,61 +468,54 @@ class CommandLineInterface:
             2: "Update Profile",
             3: "Change Password",
             4: f"{'Create' if role == 'FARMER' else 'Update'} Product NFT",
-            5: "View my activities",
-            6: "View my transactions",
-            7: "View My Carbon Credits balance",
-            8: "View My Product NFTs",
-            9: "Exchange Product NFT",
-            10: "Log out"
+            5: "View My Product NFTs",
+            6: "Exchange Product NFT",
+            7: "Add New Activity",
+            8: "View My Activities",
+            9: "View My Transactions",
+            10: "View My Carbon Credits Balance",
+            11: "Log out"
         }
+
         while True:
             print(Fore.CYAN + f"\n{role} MENU" + Style.RESET_ALL)
-            # Print menu options
-            for key, value in common_options.items():
+            for key, value in sorted(common_options.items()):
                 print(f"{key} -- {value}")
             try:
                 choice = int(input("Choose an option: "))
-                if choice in common_options:
-                    if choice == 1:
-                        # View Profile
-                        self.util.view_userView(username, f"\n{role} INFO\n")
-                    elif choice == 2:
-                        # Update Profile
-                        self.util.update_profile(username, role)
-                    elif choice == 3:
-                        # Change Password
-                        self.util.change_passwd(username)
-                    elif choice == 4:
-                        # NFT Creation (Farmer) or NFT Update (Others)
-                        if role == "FARMER":
-                            self.util.create_nft(username)
-                        else:
-                            self.util.update_nft(username)
-                    elif choice == 5:
-                        activities = self.controller.get_activities_by_username(username)
-                        self.util.view_userActivities(username, activities)
-                    elif choice == 6:
-                        transactions = self.controller.get_user_transactions(username)
-                        self.util.view_user_transactions(username, transactions)
-                    elif choice == 7:
-                        self.util.view_user_balance(username)
-                    elif choice == 8:
-                        # View user's NFTs
-                        self.util.display_user_nfts(username)
-                    elif choice == 9:
-                        # Exchange NFT for all roles
-                        self.util.transfer_nft(username, role)
-                    elif choice == 10:
-                        # Log out
-                        confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
-                        if confirm == 'Y':
-                            print(Fore.CYAN + "\nThank you for using the service!\n" + Style.RESET_ALL)
-                            self.session.reset_session()
-                            return
-                        else:
-                            print("Logout cancelled.")
+                if choice == 1:
+                    self.util.view_userView(username, f"\n{role} INFO\n")
+                elif choice == 2:
+                    self.util.update_profile(username, role)
+                elif choice == 3:
+                    self.util.change_passwd(username)
+                elif choice == 4:
+                    if role == "FARMER":
+                        self.util.create_nft(username)
                     else:
-                        print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
+                        self.util.update_nft(username)
+                elif choice == 5:
+                    self.util.display_user_nfts(username)
+                elif choice == 6:
+                    self.util.transfer_nft(username, role)
+                elif choice == 7:
+                    self.util.add_user_activity(username, role)
+                elif choice == 8:
+                    activities = self.controller.get_activities_by_username(username)
+                    self.util.view_userActivities(username, activities)
+                elif choice == 9:
+                    transactions = self.controller.get_user_transactions(username)
+                    self.util.view_user_transactions(username, transactions)
+                elif choice == 10:
+                    self.util.view_user_balance(username)
+                elif choice == 11:
+                    confirm = input("\nDo you really want to leave? (Y/n): ").strip().upper()
+                    if confirm == 'Y':
+                        print(Fore.CYAN + "\nThank you for using the service!\n" + Style.RESET_ALL)
+                        self.session.reset_session()
+                        return
+                    else:
+                        print("Logout cancelled.")
                 else:
                     print(Fore.RED + "Invalid choice! Please try again." + Style.RESET_ALL)
             except ValueError:

@@ -134,7 +134,7 @@ class Utils:
 
                             passwd_regex = r'^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!?])(?!.*\s).{8,100}$'
                             if not re.fullmatch(passwd_regex, new_passwd):
-                                print(Fore.RED + 'Password must contain at least 8 characters, at least one digit, at least one uppercase letter, one lowercase letter, and at least one special character.\n' + Style.RESET_ALL)    
+                                print(Fore.RED + 'Password must contain at least 8 characters, at least one digit, at least one uppercase letter, one lowercase letter, and at least one special character.\n' + Style.RESET_ALL)
                             elif new_passwd != new_confirm_password:
                                 print(Fore.RED + 'Password and confirmation do not match. Try again\n' + Style.RESET_ALL)
                             else:
@@ -148,7 +148,7 @@ class Utils:
             else:
                 print("Okay\n")
             break
-            
+
     def view_userView(self, username, userInfo):
         """
         This method retrieves and displays the profile information of the user 
@@ -478,3 +478,44 @@ class Utils:
                 print("\n")
         else:
             print("No transactions found.\n")
+
+    def add_user_activity(self, username: str, role: str):
+        """
+        Allows a logged-in user to add a new activity to the system and link it to the user's account.
+
+        Args:
+            username (str): The username of the logged-in user.
+            role (str): The user's role (FARMER, CARRIER, SELLER, PRODUCER, CERTIFIER).
+
+        Returns:
+            None
+        """
+        print(Fore.GREEN + "\n--- Add a New Activity ---" + Style.RESET_ALL)
+        try:
+            print("Available types:")
+            print("1 -- Investment in a project for reduction")
+            print("2 -- Performing an action")
+
+            while True:
+                type_choice = input("Select the type of activity (1 or 2): ").strip()
+                if type_choice == "1":
+                    activity_type = "investment in a project for reduction"
+                    break
+                elif type_choice == "2":
+                    activity_type = "performing an action"
+                    break
+                else:
+                    print(Fore.RED + "Invalid choice. Please select 1 or 2." + Style.RESET_ALL)
+
+            description = input("Enter a brief description of the activity: ").strip()
+
+            activity_id = self.controller.register_activities(activity_type, description)
+            self.controller.register_account_activities(username, activity_id)
+
+            co2_reduction = round(random.uniform(10.0, 100.0), 2)  # simulate environmental impact
+            self.controller.register_cron_activity(description, username, 0, activity_id, co2_reduction)
+
+            print(Fore.CYAN + "Activity successfully added and logged!" + Style.RESET_ALL)
+
+        except Exception as e:
+            print(Fore.RED + f"Error while adding the activity: {str(e)}" + Style.RESET_ALL)
