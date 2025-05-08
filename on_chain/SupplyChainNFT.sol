@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 
 /**

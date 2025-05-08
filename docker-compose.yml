@@ -19,6 +19,7 @@ services:
           sleep 1;
         done;
         echo 'Ganache is ready, starting ADIChain';
+        npx hardhat compile;
         python /progetto/off_chain/main.py
       "
     environment:
