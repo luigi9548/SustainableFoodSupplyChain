@@ -1,28 +1,36 @@
+version: '3.8'
+
 services:
   ganache:
     image: trufflesuite/ganache-cli
-    command: ganache-cli --host 0.0.0.0 --port 8545 --accounts 10 --defaultBalanceEther 1000 --mnemonic "puzzle armed shuffle flower enable tool child faculty afford protect joy shift"
+    command: >
+      ganache-cli --host 0.0.0.0 --port 8545 --accounts 10 --defaultBalanceEther 1000 --mnemonic "puzzle armed shuffle flower enable tool child faculty afford protect joy shift"
     ports:
-      - 8545:8545  
+      - 8545:8545
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   supplychain:
     build: .
-    stdin_open: true  
-    tty: true
     depends_on:
-      - ganache
+      ganache:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
     restart: always
+    environment:
+      - ETHEREUM_NODE_URL=http://ganache:8545
+    ports:
+      - 3000:3000
     command: >
       sh -c "
         echo 'Waiting for Ganache to be ready...';
         while ! curl -s http://ganache:8545 >/dev/null; do
           sleep 1;
         done;
-        echo 'Ganache is ready, starting ADIChain';
-        npx hardhat compile;
+        echo 'Ganache is ready, starting Supply Chain App';
         python /progetto/off_chain/main.py
       "
-    environment:
-      - ETHEREUM_NODE_URL=http://ganache:8545
-    ports:
-      - 3000:3000

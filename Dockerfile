@@ -1,10 +1,13 @@
 #Base Python image 
 FROM python:3.12.6
 
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get update && apt-get install -y nodejs \
-    && npm install -g npm
+# Install Node.js (usa curl + installa solo ciò che serve)
+RUN apt-get update && apt-get install -y curl gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 #Helps not exposing warnings on the container
 ENV PYTHONWARNINGS="ignore"
@@ -20,11 +23,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 WORKDIR /progetto
 COPY . /progetto
 
-# Install Node.js dependencies
-RUN npm install
-
-# Install Hardhat 
-RUN npx hardhat compile
+# Install Node.js dependencies (se c'è un package.json)
+RUN if [ -f package.json ]; then npm install; fi
 
 #Exposing port where our container will run
 EXPOSE 8000

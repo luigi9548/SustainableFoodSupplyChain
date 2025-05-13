@@ -1,0 +1,13 @@
+{
+  "name": "sustainablefoodsupplychain",
+  "version": "1.0.0",
+  "description": "Progetto per la supply chain alimentare sostenibile",
+  "main": "index.js",
+  "scripts": {},
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.2.0"
+  }
+}
+
