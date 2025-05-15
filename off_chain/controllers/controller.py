@@ -266,3 +266,9 @@ class Controller:
 
     def register_account_activities(self, username, activity_id):
         return self.db_ops.register_account_activities(username, activity_id)
+
+    def get_credentials_id_by_username(self, username):
+        return self.db_ops.get_credentials_id_by_username(username)
+
+    def delete_creds(self, id):
+        return self.db_ops.delete_creds(id)

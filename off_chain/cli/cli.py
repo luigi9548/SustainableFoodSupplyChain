@@ -42,8 +42,8 @@ class CommandLineInterface:
         contracts = ["SupplyChainRecords.sol", "SupplyChainNFT.sol", "CarbonCreditToken.sol"]
 
         if (self.util.contract_files_exist(contracts)):
-                print(Fore.GREEN + 'Loading contracts...' + Style.RESET_ALL)
-                self.act_controller.load_contracts()
+            print(Fore.GREEN + 'Loading contracts...' + Style.RESET_ALL)
+            self.act_controller.load_contracts()
         else:
             print(Fore.GREEN + 'Deploying contracts..' + Style.RESET_ALL)
             self.act_controller.deploy_and_initialize(contracts)
@@ -264,7 +264,7 @@ class CommandLineInterface:
             if self.controller.check_null_info(lastname): break
             else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
         while True:
-            actorLicense = input('License: ') 
+            actorLicense = input('License: ')
             if self.controller.check_null_info(actorLicense): break
             else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
         while True:
@@ -287,22 +287,22 @@ class CommandLineInterface:
             else: print(Fore.RED + "Invalid e-mail format.\n" + Style.RESET_ALL)
 
             #2fa debug  -> uncomment to test with smtp
-           # code = self.controller.generate_code()
-           # self.controller.send_2fa_code(mail, code)
-           # print(Fore.YELLOW + "A verification code has been sent to your email." + Style.RESET_ALL)
+        # code = self.controller.generate_code()
+        # self.controller.send_2fa_code(mail, code)
+        # print(Fore.YELLOW + "A verification code has been sent to your email." + Style.RESET_ALL)
 
-           # for attempt in range(3):
-           #     entered_code = input("Enter the 6-digit code sent to your email: ")
-           #     if entered_code == code:
-           #         print(Fore.GREEN + "Email verified successfully!" + Style.RESET_ALL)
-           #         break
-           #     else:
-           #       print(Fore.RED + "Incorrect code. Try again." + Style.RESET_ALL)
-           # else:
-           #       print(Fore.RED + "Too many incorrect attempts. Restarting email entry." + Style.RESET_ALL)
-           #       continue  # Restart email input
-           #
-           # break
+        # for attempt in range(3):
+        #     entered_code = input("Enter the 6-digit code sent to your email: ")
+        #     if entered_code == code:
+        #         print(Fore.GREEN + "Email verified successfully!" + Style.RESET_ALL)
+        #         break
+        #     else:
+        #       print(Fore.RED + "Incorrect code. Try again." + Style.RESET_ALL)
+        # else:
+        #       print(Fore.RED + "Too many incorrect attempts. Restarting email entry." + Style.RESET_ALL)
+        #       continue  # Restart email input
+        #
+        # break
         while True:
             phone = input('Phone number: ')
             if self.controller.check_phone_number_format(phone):
@@ -310,19 +310,22 @@ class CommandLineInterface:
                 else: print(Fore.RED + "This phone number has already been inserted. \n" + Style.RESET_ALL)
             else: print(Fore.RED + "Invalid phone number format.\n" + Style.RESET_ALL)
 
-        from_address_actor = self.controller.get_public_key_by_username(username)
-        self.act_controller.register_entity(role, name, lastname, from_address=from_address_actor)
         insert_code = self.controller.insert_actor_info(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
         if insert_code == 0:
+            from_address_actor = self.controller.get_public_key_by_username(username)
+            self.act_controller.register_entity(role, name, lastname, from_address=from_address_actor)
             print(Fore.GREEN + 'Information saved correctly!' + Style.RESET_ALL)
             if role == 'CERTIFIER':
                 self.certifier_menu(username)
             else:
                 self.common_menu_options(role, username)
-        elif insert_code == -1:
-            print(Fore.RED + 'Internal error!' + Style.RESET_ALL)
-        elif insert_code == -2:
-            print(Fore.RED + 'Invalid Licence! Restarting input for security.' + Style.RESET_ALL)
+        else:
+            id_cred = self.controller.get_credentials_id_by_username(username)
+            self.controller.delete_creds(id_cred)
+            if insert_code == -1:
+                print(Fore.RED + 'Internal error!' + Style.RESET_ALL)
+            elif insert_code == -2:
+                print(Fore.RED + 'Invalid Licence! Restarting input for security.' + Style.RESET_ALL)
 
     def certifier_menu(self, username):
         """
@@ -393,6 +396,12 @@ class CommandLineInterface:
                         msg = "Do you really want to assign carbon credits to activity ID " + activity_id + " ? (Y/n): "
                         confirm = input(msg).strip().upper()
                         if confirm == 'Y':
+                            while True:
+                                password = maskpass.askpass("\nInsert your password in order to proceed with the assignment: ", mask="*")
+                                if not self.controller.check_credentials(username, password):
+                                    print(Fore.RED + "\nWrong password submitted. Try again...\n" + Style.RESET_ALL)
+                                else:
+                                    break
                             from_address_actor = self.controller.get_public_key_by_username(username)
                             co2Amount = self.controller.get_co2Amount_by_activity(activity_id)
                             co2AmountConverted = round(co2Amount)
@@ -417,6 +426,12 @@ class CommandLineInterface:
                         msg = "Do you really want to remove " + amount_to_burn + " carbon credits to activity ID " + activity_id + " ? (Y/n): "
                         confirm = input(msg).strip().upper()
                         if confirm == 'Y':
+                            while True:
+                                password = maskpass.askpass("\nInsert your password in order to proceed with the removal: ", mask="*")
+                                if not self.controller.check_credentials(username, password):
+                                    print(Fore.RED + "\nWrong password submitted. Try again...\n" + Style.RESET_ALL)
+                                else:
+                                    break
                             from_address_actor = self.controller.get_public_key_by_username(username)
                             address_to = self.controller.get_public_key_by_username(username_input)
                             user_balance = self.act_controller.get_balance(address_to)
