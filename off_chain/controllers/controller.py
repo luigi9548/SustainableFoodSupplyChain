@@ -5,6 +5,12 @@ from colorama import Fore, Style, init
 from db.db_operations import DatabaseOperations
 from session.session import Session
 
+#2FA debgu
+import smtplib
+import random
+import ssl
+from email.message import EmailMessage
+
 from models.credentials import Credentials
 #from models.credentials import Credentials
 
@@ -67,11 +73,34 @@ class Controller:
             return True
         else:
             return False
+        
+    #2fa debug and test
+
+    # mailer
+    def send_2fa_code(email_address, code):
+        sender_email = ""
+        sender_password = ""  
+
+        msg = EmailMessage()
+        msg.set_content(f"Your verification code is: {code}")
+        msg["Subject"] = "Your Verification Code"
+        msg["From"] = sender_email
+        msg["To"] = email_address
+
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+
+    # generate random atp code
+    def generate_code():
+        return str(random.randint(100000, 999999))
+    #end debug 2fa     
 
     def insert_actor_info(self, role: str, username: str, name: str, lastname: str, actorLicense: int, residence: str, birthdayPlace: str, birthday: str, mail: str, phone: str):
         """
         Inserts actor information into the database.
-
+        
         :param role: The role of the actor.
         :param username: The username of the actor.
         :param name: The first name of the actor.
@@ -82,8 +111,12 @@ class Controller:
         :param birthday: The birthday of the actor (format YYYY-MM-DD).
         :param mail: The email address of the actor.
         :param phone: The phone number of the actor.
-        :return: An insertion code indicating success (0) or failure.
+        :return: An insertion code indicating success (0) or -1 failure, or -2 if licence is not valid.
         """
+
+        if not self.db_ops.check_valid_licence(role, actorLicense):
+               return -2  # Or another code indicating license failure
+    
         insertion_code = self.db_ops.insert_actor(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
 
         if insertion_code == 0:

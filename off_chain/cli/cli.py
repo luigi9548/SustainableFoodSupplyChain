@@ -267,7 +267,7 @@ class CommandLineInterface:
             if self.controller.check_null_info(lastname): break
             else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
         while True:
-            actorLicense = input('License: ') #TODO aggiungere opportuni controlli sulla licenza
+            actorLicense = input('License: ') 
             if self.controller.check_null_info(actorLicense): break
             else: print(Fore.RED + '\nPlease insert information.' + Style.RESET_ALL)
         while True:
@@ -288,6 +288,24 @@ class CommandLineInterface:
                 if self.controller.check_unique_email(mail) == 0: break
                 else: print(Fore.RED + "This e-mail has already been inserted. \n" + Style.RESET_ALL)
             else: print(Fore.RED + "Invalid e-mail format.\n" + Style.RESET_ALL)
+
+            #2fa debug  -> uncomment to test with smtp
+           # code = self.controller.generate_code()
+           # self.controller.send_2fa_code(mail, code)
+           # print(Fore.YELLOW + "A verification code has been sent to your email." + Style.RESET_ALL)
+
+           # for attempt in range(3):
+           #     entered_code = input("Enter the 6-digit code sent to your email: ")
+           #     if entered_code == code:
+           #         print(Fore.GREEN + "Email verified successfully!" + Style.RESET_ALL)
+           #         break
+           #     else:
+           #       print(Fore.RED + "Incorrect code. Try again." + Style.RESET_ALL)
+           # else:
+           #       print(Fore.RED + "Too many incorrect attempts. Restarting email entry." + Style.RESET_ALL)
+           #       continue  # Restart email input
+           #
+           # break
         while True:
             phone = input('Phone number: ')
             if self.controller.check_phone_number_format(phone):
@@ -306,6 +324,8 @@ class CommandLineInterface:
                 self.common_menu_options(role, username)
         elif insert_code == -1:
             print(Fore.RED + 'Internal error!' + Style.RESET_ALL)
+        elif insert_code == -2:
+            print(Fore.RED + 'Invalid Licence! Restarting input for security.' + Style.RESET_ALL)
 
     def certifier_menu(self, username):
         """
