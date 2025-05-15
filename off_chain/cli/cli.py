@@ -29,7 +29,7 @@ class CommandLineInterface:
         self.ops = DatabaseOperations()
         # test login -> everytime reset
 
-        self.util = Utils(session)
+        self.util = Utils(session, self.act_controller)
 
         self.menu = {
             1: 'Registra utente',
@@ -38,6 +38,18 @@ class CommandLineInterface:
         }
 
     def print_menu(self):
+
+        contracts = ["SupplyChainRecords.sol", "SupplyChainNFT.sol", "CarbonCreditToken.sol"]
+
+        if (self.util.contract_files_exist(contracts)):
+                print(Fore.GREEN + 'Loading contracts...' + Style.RESET_ALL)
+                self.act_controller.load_contracts()
+        else:
+            print(Fore.GREEN + 'Deploying contracts..' + Style.RESET_ALL)
+            self.act_controller.deploy_and_initialize(contracts)
+            print(Fore.GREEN + 'Loading contracts...' + Style.RESET_ALL)
+            self.act_controller.load_contracts()
+
         while True:
             """Displays the menu and handles user choices."""
             print(Fore.CYAN + r"""
@@ -117,21 +129,6 @@ class CommandLineInterface:
         The method validates user inputs and interacts with the Controller to perform 
         registration actions.
         """
-
-        contracts = ["SupplyChainRecords.sol", "SupplyChainNFT.sol", "CarbonCreditToken.sol"]
-
-
-        while True:
-            proceed = input("In order to register, you need to deploy. Do you want to proceed with deployment and initialization of the contract? (Y/n): ")
-            if proceed.strip().upper() == "Y":
-                self.act_controller.deploy_and_initialize(contracts)
-                break  # Exit the loop after deployment
-            elif proceed.strip().upper() == "N":
-                print(Fore.RED + "Deployment cancelled. Please deploy the contracts when you are ready to register." + Style.RESET_ALL)
-                return  # Return from the function to cancel
-            else:
-                print(Fore.RED + 'Wrong input, please insert Y or N!' + Style.RESET_ALL)
-
         print('Please, enter your wallet credentials.')
         attempts = 0
         while True:
