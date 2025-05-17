@@ -8,7 +8,6 @@ from session.session import Session
 from db.db_operations import DatabaseOperations
 from cli.utils import Utils
 from colorama import Fore, Style, init
-import getpass
 
 
 class CommandLineInterface:

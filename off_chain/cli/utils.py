@@ -4,15 +4,10 @@ displaying data etc..
 """
 
 import datetime
-import math
 import re
 import click
-import getpass
-import time
 import random
 from colorama import Fore, Style, init
-from rich.console import Console
-from rich.table import Table
 import maskpass
 import os
 

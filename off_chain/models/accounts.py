@@ -1,5 +1,4 @@
 from models.model_base import Model
-from colorama import Fore, Style, init
 
 class Accounts(Model):
     """
@@ -105,18 +104,3 @@ class Accounts(Model):
     def set_mail(self, mail):
         self.mail = mail
       
-        
-    def delete(self):
-        """
-        Deletes an Account record from the database based on its ID.
-        """
-      
-        if self.id is not None:
-            result = db.delete_account(self.id)
-            if result == 0:
-                print(Fore.GREEN + 'Account deleted successfully!\n' + Style.RESET_ALL)
-            else:
-                print(Fore.RED + 'Error deleting account!\n' + Style.RESET_ALL)
-            return result
-        else:
-            return -1 

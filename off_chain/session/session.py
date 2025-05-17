@@ -12,28 +12,32 @@ class Session:
 
     def __init__(self):
         """
-        Initializes a new session with no user, no login attempts, 
-        and no login error timestamp.
+        Initializes a new session.
+
+        Initial attributes:
+        - __user: No user is logged in (None).
+        - __attempts: Number of failed login attempts, initially 0.
+        - __login_error_timestamp: Timestamp for login timeout, initially 0.
         """
         self.__user = None
         self.__attempts = 0
         self.__login_error_timestamp = 0
-
-    def get_user(self):
-        """
-        Returns the current user of the session.
-        """
-        return self.__user
     
     def set_user(self, user):
         """
-        Sets the user for the session.
+        Sets the current user for the session.
+
+        Args:
+            user (any): The user object to associate with this session.
         """
         self.__user = user
 
     def get_attempts(self):
         """
-        Returns the number of login attempts.
+        Returns the number of failed login attempts.
+
+        Returns:
+            int: The current count of failed login attempts.
         """
         return self.__attempts
     
@@ -51,14 +55,20 @@ class Session:
 
     def set_error_attempts_timeout(self, timeout: int):
         """
-        Sets a timeout after a failed login attempt, 
-        using the current time plus the specified timeout.
+        Sets a timeout after a failed login attempt, blocking further attempts for a period.
+
+        Args:
+            timeout (int): Duration of the timeout in seconds.
         """
         self.__login_error_timestamp = time.time() + timeout
 
     def get_timeout_left(self):
         """
-        Returns the remaining time until the session timeout is lifted.
+        Returns the remaining time before the login block is lifted.
+
+        Returns:
+            float: Time left in seconds before login is allowed again.
+                   Returns 0 if the timeout has expired.
         """
         return max(0, self.__login_error_timestamp - time.time())
 

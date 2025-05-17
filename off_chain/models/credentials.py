@@ -1,6 +1,5 @@
-from sqlite3 import dbapi2
 from models.model_base import Model
-from colorama import Fore, Style, init
+from colorama import Fore, Style
 
 class Credentials(Model):
     """
@@ -70,19 +69,6 @@ class Credentials(Model):
     def get_creation_datetime(self):
         return self.creation_datetime
 
-    def delete(self):
-        """
-        Deletes a Credentials record from the database based on its ID.
-        """
-        if self.id is not None:
-            result = self.db.delete_creds(self.id)
-            if result == 0:
-                print(Fore.GREEN + 'Information deleted correctly!\n' + Style.RESET_ALL)
-            else:
-                print(Fore.RED + 'Error deleting information!\n' + Style.RESET_ALL)
-            return result
-        else:
-            return -1
 
 
    

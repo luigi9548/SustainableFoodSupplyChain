@@ -2,7 +2,7 @@ import os
 import random
 from colorama import Fore, Style, init
 from web3 import Web3
-from solcx import compile_standard, get_installed_solc_versions, install_solc, set_solc_version
+from solcx import compile_standard, get_installed_solc_versions, install_solc
 
 class DeployController:
     """

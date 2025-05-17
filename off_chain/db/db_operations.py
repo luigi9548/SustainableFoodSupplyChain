@@ -180,106 +180,7 @@ class DatabaseOperations:
 
         self.conn.commit()
 
-    def register_creds(self, username, password, public_key, private_key, temp_code=None, temp_code_validity=None):
-        try:
-            if self.check_username(username) == 0:
-                obfuscated_private_k = self.encrypt_private_k(private_key, password)
-                hashed_passwd = self.hash_function(password)
-                self.cur.execute("""
-                    INSERT INTO Credentials (username, password, public_key, private_key, temp_code, temp_code_validity)
-                    VALUES (?, ?, ?, ?, ?, ?)""",
-                    (username, hashed_passwd, public_key, obfuscated_private_k, temp_code, temp_code_validity))
-                self.conn.commit()
-                return 0
-            else:
-                return -1
-        except sqlite3.IntegrityError as e:
-            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL)
-            return -1
-
-    def get_credentials_id_by_username(self, username):
-        try:
-            self.cur.execute("SELECT id FROM Credentials WHERE username = ?", (username,))
-            result = self.cur.fetchone()
-            if result:
-                return result[0]
-            else:
-                return None
-        except sqlite3.Error as e:
-            print(Fore.RED + f"Error retrieving credentials ID: {e}" + Style.RESET_ALL)
-            return None
-
-    def update_creds(self, id, username=None, password=None, public_key=None, private_key=None, temp_code=None, temp_code_validity=None):
-        """
-        Updates an existing credentials record in the database.
-        Only updates fields that are provided (non-None).
-        """
-        try:
-            query = "UPDATE Credentials SET "
-            params = []
-
-            if username:
-                query += "username = ?, "
-                params.append(username)
-
-            if password:
-                hashed_passwd = self.hash_function(password)
-                query += "password = ?, "
-                params.append(hashed_passwd)
-
-            if public_key:
-                query += "public_key = ?, "
-                params.append(public_key)
-
-            if private_key:
-                obfuscated_private_k = self.encrypt_private_k(private_key, password if password else self.get_current_password(id))
-                query += "private_key = ?, "
-                params.append(obfuscated_private_k)
-
-            if temp_code is not None:
-                query += "temp_code = ?, "
-                params.append(temp_code)
-
-            if temp_code_validity is not None:
-                query += "temp_code_validity = ?, "
-                params.append(temp_code_validity)
-
-            # Remove trailing comma and space
-            query = query.rstrip(", ") + " WHERE id = ?"
-            params.append(id)
-
-            self.cur.execute(query, params)
-            self.conn.commit()
-
-            if self.cur.rowcount > 0:
-                print(Fore.GREEN + "Information updated correctly!\n" + Style.RESET_ALL)
-                return 0
-            else:
-                print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
-                return -1
-
-        except sqlite3.Error as e:
-            print(Fore.RED + f'Error updating credentials: {e}' + Style.RESET_ALL)
-            return -1
-
-    def delete_creds(self, id):
-        """
-        Deletes a credentials record from the database based on its ID.
-        """
-        try:
-            self.cur.execute("DELETE FROM Credentials WHERE id = ?", (id,))
-            self.conn.commit()
-
-            if self.cur.rowcount > 0:
-                print(Fore.GREEN + "Information deleted correctly!\n" + Style.RESET_ALL)
-                return 0
-            else:
-                print(Fore.YELLOW + "No record found with the given ID.\n" + Style.RESET_ALL)
-                return -1
-
-        except sqlite3.Error as e:
-            print(Fore.RED + f'Error deleting credentials: {e}' + Style.RESET_ALL)
-            return -1
+# ---------- ACCOUNTS ----------
 
     def insert_actor(self, role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone):
         """
@@ -326,10 +227,71 @@ class DatabaseOperations:
             return 0
         except sqlite3.IntegrityError as e:
             return -1
+ 
+    def update_account(self, username, name, lastname, birthday, birth_place, residence, phone, mail, id):
+        """
+        Updates the information of an existing account in the database.
 
-    def check_username(self, username):
-        self.cur.execute("SELECT COUNT(*) FROM Credentials WHERE username = ?", (username,))
-        return -1 if self.cur.fetchone()[0] > 0 else 0
+        This method updates multiple fields of an account based on the given account ID.
+        All fields are replaced with the new provided values.
+
+        Parameters:
+            username (str): The updated username.
+            name (str): The updated first name.
+            lastname (str): The updated last name.
+            birthday (str): The updated date of birth (in string or date format).
+            birth_place (str): The updated place of birth.
+            residence (str): The updated residence address.
+            phone (str): The updated phone number.
+            mail (str): The updated email address.
+            id (int): The ID of the account to update.
+
+        Returns:
+            int: 0 if the update is successful, -1 if a database error occurs.
+        """
+        try:
+            self.cur.execute("""
+            UPDATE Accounts 
+            SET username = ?, name = ?, lastname = ?, birthday = ?, 
+                birth_place = ?, residence = ?, phone = ?, mail = ? 
+            WHERE id = ?""",
+            (username, name, lastname, birthday, birth_place, residence, phone, mail, id))
+            self.conn.commit()
+            return 0
+        except sqlite3.Error:
+            return -1
+
+    def get_users(self):
+        """
+        Retrieves all user records from the Accounts table.
+
+        Returns:
+            list: A list of Accounts instances representing all users in the system.
+        """
+        self.cur.execute("SELECT * FROM Accounts")
+
+        users = [Accounts(id, username, role, name, licence_id, lastname, birthday, birth_place, residence, phone, mail)
+                 for id, username, role, name, licence_id, lastname, birthday, birth_place, residence, phone, mail in self.cur.fetchall()]
+        return users
+
+    def get_user_by_username(self, username):
+        """
+        Retrieves a user's detailed information from table Account.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            Accounts: An instance of the Accounts class if the user exists, otherwise, None.
+        """
+        user = self.cur.execute("""
+                                    SELECT *
+                                    FROM Accounts
+                                    WHERE Accounts.username = ?""", (username,)).fetchone()
+
+        if user is not None:
+            return Accounts(*user)
+        return None
 
     def check_unique_email(self, mail):
         """
@@ -369,142 +331,21 @@ class DatabaseOperations:
         else:
             return -1
 
-    def check_valid_licence(self, role, licence_number):
-        """
-        Checks if a valid licence exists for a given role.
-        """
-        self.cur.execute("SELECT COUNT(*) FROM Licences WHERE type = ? AND licence_number = ?", (role, licence_number))
-        return self.cur.fetchone()[0] > 0
+# ---------- END ACCOUNTS ----------
 
-    def register_licences(self, type, licence_number):
-        """
-        Registers a new licence in the database.
-        """
-        try:
-            self.cur.execute("""
-                INSERT INTO Licences (type, licence_number)
-                VALUES (?, ?)""",
-                (type, licence_number)
-            )
-            self.conn.commit()
-            return 0  # Success
-        except sqlite3.IntegrityError as e:
-            print(Fore.RED + f'Error inserting licence: {e}' + Style.RESET_ALL)
-            return -1  # Error
-
-    def update_licences(self, id, type=None, licence_number=None):
-        """
-        Updates an existing licence record.
-        Only updates fields that are provided (non-None).
-        """
-        try:
-            query = "UPDATE Licences SET "
-            params = []
-
-            if type is not None:
-                query += "type = ?, "
-                params.append(type)
-
-            if licence_number is not None:
-                query += "licence_number = ?, "
-                params.append(licence_number)
-
-            # Always update the timestamp
-            query += "update_datetime = CURRENT_TIMESTAMP, "
-
-            # Remove the last comma
-            query = query.rstrip(", ") + " WHERE id = ?"
-            params.append(id)
-
-            self.cur.execute(query, params)
-            self.conn.commit()
-
-            if self.cur.rowcount > 0:
-                print(Fore.GREEN + "Licence updated successfully!\n" + Style.RESET_ALL)
-                return 0
-            else:
-                print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
-                return -1
-
-        except sqlite3.Error as e:
-            print(Fore.RED + f'Error updating licence: {e}' + Style.RESET_ALL)
-            return -1
-
-    def delete_licences(self, id):
-        """
-        Deletes a licence record from the database based on its ID.
-        """
-        try:
-            self.cur.execute("DELETE FROM Licences WHERE id = ?", (id,))
-            self.conn.commit()
-
-            if self.cur.rowcount > 0:
-                print(Fore.GREEN + "Licence deleted successfully!\n" + Style.RESET_ALL)
-                return 0
-            else:
-                print(Fore.YELLOW + "No record found with the given ID.\n" + Style.RESET_ALL)
-                return -1
-
-        except sqlite3.Error as e:
-            print(Fore.RED + f'Error deleting licence: {e}' + Style.RESET_ALL)
-            return -1
-
-
-
-    def get_credentials(self):
-        self.cur.execute("SELECT * FROM Credentials")
-        return self.cur.fetchall()
-
-    def get_accounts(self):
-        self.cur.execute("SELECT * FROM Accounts")
-        return self.cur.fetchall()
-
-    def get_activities(self):
-        self.cur.execute("SELECT * FROM Activities")
-        return self.cur.fetchall()
-
-    def get_accounts_activities(self):
-        self.cur.execute("SELECT * FROM Accounts_Activities")
-        return self.cur.fetchall()
-
-    def get_cron_activities(self):
-        self.cur.execute("SELECT * FROM Cron_Activities")
-        return self.cur.fetchall()
-
-    def get_products(self):
-        self.cur.execute("SELECT * FROM Products")
-        return self.cur.fetchall()
-
-    def update_account(self, username, name, lastname, birthday, birth_place, residence, phone, mail, id):
-        """
-        Updates an existing account record in the database.
-        """
-        try:
-            self.cur.execute("""
-            UPDATE Accounts 
-            SET username = ?, name = ?, lastname = ?, birthday = ?, 
-                birth_place = ?, residence = ?, phone = ?, mail = ? 
-            WHERE id = ?""",
-            (username, name, lastname, birthday, birth_place, residence, phone, mail, id))
-            self.conn.commit()
-            return 0
-        except sqlite3.Error:
-            return -1
-
-    def delete_account(self, id):
-        """
-        Deletes an account record from the database.
-        """
-        try:
-            self.cur.execute("DELETE FROM Accounts WHERE id = ?", (id,))
-            self.conn.commit()
-            return 0
-        except sqlite3.Error:
-            return -1
+# ---------- ACCOUNTS_ACTIVITIES
 
     def register_account_activities(self, username, activity_id):
         """
-          Inserts a new account-activity association.
+        Inserts a new association between a user account and an activity into the Accounts_Activities table.
+
+        Args:
+            username (str): The username of the account.
+            activity_id (int): The ID of the activity to associate with the user.
+
+        Returns:
+            int: 0 if the insertion is successful.
+            int: -1 if a database integrity error occurs (e.g., duplicate entry).
         """
         try:
             self.cur.execute("INSERT INTO Accounts_Activities (username, activity_id) VALUES (?, ?)",
@@ -514,32 +355,21 @@ class DatabaseOperations:
         except sqlite3.IntegrityError:
             return -1
 
-    def update_account_activities(self, record_id, username, activity_id):
-        """
-        Updates an existing account-activity association.
-        """
-        try:
-            self.cur.execute("UPDATE Accounts_Activities SET username = ?, activity_id = ? WHERE id = ?",
-                         (username, activity_id, record_id))
-            self.conn.commit()
-            return 0
-        except sqlite3.IntegrityError:
-            return -1
+# ---------- END ACCOUNTS_ACTVITIES ----------
 
-    def delete_account_activities(self, record_id):
-        """
-        Deletes an account-activity association.
-        """
-        try:
-            self.cur.execute("DELETE FROM Accounts_Activities WHERE id = ?", (record_id,))
-            self.conn.commit()
-            return 0
-        except sqlite3.IntegrityError:
-            return -1
+# ---------- ACTIVITIES ---------
 
     def register_activities(self, type, description):
         """
-        Inserts a new activity record into the database.
+        Inserts a new activity record into the Activities table.
+
+        Args:
+            type (str): The type/category of the activity.
+            description (str): A description of the activity.
+
+        Returns:
+            int: The ID of the newly inserted activity if successful.
+            int: -1 if a database integrity error occurs.
         """
         try:
             self.cur.execute("""
@@ -552,36 +382,259 @@ class DatabaseOperations:
         except sqlite3.IntegrityError:
             return -1
 
-    def update_activities(self, id, type, description):
+# ---------- END ACTIVITIES ----------
+
+# ---------- CREDENTIALS ----------
+
+    def register_creds(self, username, password, public_key, private_key, temp_code=None, temp_code_validity=None):
         """
-         Updates an existing activity record in the database.
+        Registers a new credentials record in the database.
+
+        Checks if the username is available, then hashes the password,
+        encrypts the private key with the password, and inserts all data into the Credentials table.
+
+        Args:
+            username (str): The username to register.
+            password (str): The plain-text password to be hashed and stored.
+            public_key (str): The public key associated with the user.
+            private_key (str): The private key to be encrypted and stored.
+            temp_code (str, optional): Temporary code for authentication or recovery.
+            temp_code_validity (datetime, optional): Expiry datetime of the temporary code.
+
+        Returns:
+            int: 0 if registration succeeds, -1 if username already exists or on database error.
         """
         try:
-            self.cur.execute("""
-            UPDATE Activities 
-            SET type = ?, description = ? 
-            WHERE id = ?""",
-             (type, description, id))
-            self.conn.commit()
-            return 0
-        except sqlite3.Error:
+            if self.check_username(username) == 0:
+                obfuscated_private_k = self.encrypt_private_k(private_key, password)
+                hashed_passwd = self.hash_function(password)
+                self.cur.execute("""
+                    INSERT INTO Credentials (username, password, public_key, private_key, temp_code, temp_code_validity)
+                    VALUES (?, ?, ?, ?, ?, ?)""",
+                    (username, hashed_passwd, public_key, obfuscated_private_k, temp_code, temp_code_validity))
+                self.conn.commit()
+                return 0
+            else:
+                return -1
+        except sqlite3.IntegrityError as e:
+            print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL)
             return -1
 
-    def delete_activities(self, id):
+    def change_password(self, username, new_pass):
         """
-        Deletes an activity record from the database.
+        Changes the password for a given username by hashing the new password
+        and updating the corresponding record in the Credentials table.
+
+        Args:
+            username (str): The username of the account to update.
+            new_pass (str): The new plain-text password to be hashed and stored.
+
+        Returns:
+            int: 0 if the password update was successful, -1 if an error occurred.
+        """
+        new_hash = self.hash_function(new_pass)
+        try:
+            self.cur.execute("UPDATE Credentials SET password = ? WHERE username = ?", (new_hash, username))
+            self.conn.commit()
+            return 0
+        except Exception:
+            return -1
+
+    def delete_creds(self, id):
+        """
+        Deletes a credentials record from the database based on its ID.
+
+        Args:
+            id (int): The ID of the credentials record to delete.
+
+        Returns:
+            int: 0 if the deletion is successful,
+                 -1 if no record was found with the given ID or if an error occurs.
         """
         try:
-            self.cur.execute("DELETE FROM Activities WHERE id = ?", (id,))
+            self.cur.execute("DELETE FROM Credentials WHERE id = ?", (id,))
             self.conn.commit()
-            return 0
-        except sqlite3.Error:
+
+            if self.cur.rowcount > 0:
+                print(Fore.GREEN + "Information deleted correctly!\n" + Style.RESET_ALL)
+                return 0
+            else:
+                print(Fore.YELLOW + "No record found with the given ID.\n" + Style.RESET_ALL)
+                return -1
+
+        except sqlite3.Error as e:
+            print(Fore.RED + f'Error deleting credentials: {e}' + Style.RESET_ALL)
             return -1
 
+    def get_credentials_id_by_username(self, username):
+        """
+        Retrieves the ID of the credentials record associated with the given username.
+
+        Args:
+            username (str): The username whose credentials ID is to be retrieved.
+
+        Returns:
+            int or None: The ID of the credentials record if found, otherwise None.
+        """
+        try:
+            self.cur.execute("SELECT id FROM Credentials WHERE username = ?", (username,))
+            result = self.cur.fetchone()
+            if result:
+                return result[0]
+            else:
+                return None
+        except sqlite3.Error as e:
+            print(Fore.RED + f"Error retrieving credentials ID: {e}" + Style.RESET_ALL)
+            return None
+
+    def get_creds_by_username(self, username):
+        """
+        Retrieves a user's credentials from the Credentials table based on their username.
+
+        Args:
+            username (str): The username of the user whose credentials are to be retrieved.
+
+        Returns:
+            Credentials: A Credentials object containing the user's credentials if found.
+            None: If no credentials are found for the given username.
+        """
+        creds = self.cur.execute("""
+                                SELECT *
+                                FROM Credentials
+                                WHERE username=?""", (username,)).fetchone()
+        if creds is not None:
+            return Credentials(*creds)
+        return None
+
+    def get_public_key_by_username(self, username):
+        """
+        Retrieve the public key for a given username from the Credentials table.
+
+        Args:
+            username (str): The username of the user whose public key is to be retrieved.
+
+        Returns:
+            str: The public key of the user if found, None otherwise.
+        """
+        try:
+            self.cur.execute("SELECT public_key FROM Credentials WHERE username = ?", (username,))
+            result = self.cur.fetchone()
+            if result:
+                return result[0]  # Return the public key
+            else:
+                return None  # Public key not found
+        except Exception as e:
+            print(Fore.RED + f"An error occurred while retrieving public key: {e}" + Style.RESET_ALL)
+            return None
+
+    def get_helpers(self):
+        """
+        Retrieves the public keys of all users who are considered potential helpers.
+    
+        Specifically, it selects public keys from the Credentials table for users
+        whose account type is not 'CERTIFIER'.
+    
+        Returns:
+            list of str: A list containing the public keys of potential helpers.
+        """
+        self.cur.execute("""
+                         SELECT c.public_key
+                         FROM Credentials c
+                         JOIN Accounts a ON c.username = a.username
+                         WHERE a.type != 'CERTIFIER'
+                         """)
+        public_keys = [row[0] for row in self.cur.fetchall()]
+
+        return public_keys
+
+    def get_username_by_public_key(self, public_key):
+        """
+        Retrieves the username associated with the given public key.
+
+        Args:
+            public_key (str): The public key to look up.
+
+        Returns:
+            str or None: The username linked to the public key if found, otherwise None.
+        """
+        self.cur.execute(
+            "SELECT username FROM Credentials WHERE public_key = ?", (public_key,))
+        result = self.cur.fetchone()
+        return result[0] if result else None
+
+    def check_username(self, username):
+        """
+        Check if an username is unique within the Credentials table in the database.
+
+        Args:
+            username (str): The username to check for uniqueness.
+
+        Returns:
+            int: 0 if the email address is not found in the Accounts records (unique), -1 if it is found (not unique).
+        """
+        self.cur.execute("SELECT COUNT(*) FROM Credentials WHERE username = ?", (username,))
+        return -1 if self.cur.fetchone()[0] > 0 else 0
+
+    def check_credentials(self, username, password):
+        """
+        Verifies if the provided username and password match a record in the database.
+
+        Parameters:
+            username (str): The username to check.
+            password (str): The plain-text password to verify.
+
+        Returns:
+            bool: True if the credentials are valid, False otherwise.
+        """
+        result = self.cur.execute("SELECT password FROM Credentials WHERE username = ?", (username,)).fetchone()
+        if result:
+            saved_hash = result[0]
+            params = saved_hash.split('$')
+            hashed_passwd = hashlib.scrypt(password.encode(), salt=bytes.fromhex(params[1]), n=2, r=8, p=1, dklen=64)
+            return hashed_passwd.hex() == params[0]
+        return False
+
+    def key_exists(self, public_key, private_key):
+        """
+        Checks if either a public key or a private key already exists in the Credentials table.
+
+        Args:
+            public_key (str): The public key to check against existing entries in the database.
+            private_key (str): The private key to check against existing entries in the database.
+
+        Returns:
+            bool: True if either the public or private key is found in the database (indicating they are not unique),
+                  False if neither key is found (indicating they are unique) or an exception occurs during the query.
+        
+        Exceptions:
+            Exception: Catches and prints any exception that occurs during the database operation, returning False.
+        """
+        try:
+            query = "SELECT public_key, private_key FROM Credentials WHERE public_key=? OR private_key=?"
+            existing_users = self.cur.execute(query, (public_key, private_key)).fetchall()
+            return len(existing_users) > 0
+        except Exception as e:
+            print(Fore.RED + f"An error occurred: {e}" + Style.RESET_ALL)
+            return False
+
+# ---------- END CREDENTIALS ----------
+
+# ---------- CRON_ACTIVITIES ----------
 
     def register_cron_activity(self, description, username, state, activity_id, co2_reduction):
         """
-        Registers a new cron activity in the database.
+        Inserts a new record into the Cron_Activities table.
+
+        Args:
+            description (str): Description of the cron activity.
+            username (str): Username associated with the activity.
+            state (int): State/status of the activity (e.g., 0 for pending, 1 for processed).
+            activity_id (int): ID referencing the original activity.
+            co2_reduction (float): Amount of CO2 reduction attributed to this activity.
+
+        Returns:
+            int: 0 if insertion is successful.
+            int: -1 if a database integrity error occurs, printing the error message.
         """
         try:
             self.cur.execute("""
@@ -595,73 +648,150 @@ class DatabaseOperations:
             print(Fore.RED + f'Error inserting cron activity: {e}' + Style.RESET_ALL)
             return -1  # Error
 
-    def update_cron_activity(self, id, description=None, username=None, state=None, activity_id=None, co2_reduction=None):
+    def update_activity_state(self, activitie_id, state):
         """
-        Updates an existing cron activity record.
-        Only updates fields that are provided (non-None).
-        """
-        try:
-            query = "UPDATE Cron_Activities SET "
-            params = []
+        Updates the state of a specific activity identified by its activity_id.
 
-            if description is not None:
-                query += "description = ?, "
-                params.append(description)
+        Args:
+            activitie_id (int): The unique identifier of the activity to update.
+            state (int): The new state value to set for the activity.
 
-            if username is not None:
-                query += "accepted = ?, "
-                params.append(username)
-
-            if state is not None:
-                query += "state = ?, "
-                params.append(state)
-
-            if activity_id is not None:
-                query += "activity_id = ?, "
-                params.append(activity_id)
-
-            if co2_reduction is not None:
-                query += "co2_reduction = ?, "
-                params.append(co2_reduction)
-
-            # Remove the last comma
-            query = query.rstrip(", ") + " WHERE id = ?"
-            params.append(id)
-
-            self.cur.execute(query, params)
-            self.conn.commit()
-
-            if self.cur.rowcount > 0:
-                print(Fore.GREEN + "Cron activity updated successfully!\n" + Style.RESET_ALL)
-                return 0
-            else:
-                print(Fore.YELLOW + "No records updated (ID not found or no changes made).\n" + Style.RESET_ALL)
-                return -1
-
-        except sqlite3.Error as e:
-            print(Fore.RED + f'Error updating cron activity: {e}' + Style.RESET_ALL)
-            return -1
-
-    def delete_cron_activity(self, id):
-        """
-        Deletes a cron activity record from the database based on its ID.
+        Returns:
+            int: 0 if the update is successful, -1 if a database error occurs.
         """
         try:
-            self.cur.execute("DELETE FROM Cron_Activities WHERE id = ?", (id,))
+            self.cur.execute("""
+            UPDATE Cron_Activities 
+            SET state = ? 
+            WHERE activity_id = ?""",
+            (state, activitie_id))
             self.conn.commit()
-
-            if self.cur.rowcount > 0:
-                print(Fore.GREEN + "Cron activity deleted successfully!\n" + Style.RESET_ALL)
-                return 0
-            else:
-                print(Fore.YELLOW + "No record found with the given ID.\n" + Style.RESET_ALL)
-                return -1
-
-        except sqlite3.Error as e:
-            print(Fore.RED + f'Error deleting cron activity: {e}' + Style.RESET_ALL)
+            return 0
+        except sqlite3.Error:
             return -1
+
+    def get_activities_to_be_processed(self):
+        """
+        Retrieves all activities that have not been processed yet.
+
+        Returns:
+            list: A list of Cron_Activities objects representing unprocessed activities.
+        """
+        self.cur.execute("SELECT * FROM Cron_Activities WHERE state = 0")
+
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
+                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
+        return activities
+
+    def get_activities_by_username(self, username):
+        """
+        Retrieves all activities associated with a given username.
+
+        Args:
+            username (str): The username for which to retrieve activities.
+
+        Returns:
+            list: A list of Cron_Activities objects related to the given user.
+        """
+        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ?", (username,))
+
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
+                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
+        return activities
+
+    def get_activities_to_be_processed_by_username(self, username):
+        """
+        Retrieves all activities assigned to the given username that are pending processing.
+
+        Args:
+            username (str): The username to filter activities by.
+
+        Returns:
+            list of Cron_Activities: A list of Cron_Activities objects representing activities
+                                        with state = 0 (to be processed) for the specified user.
+        """
+        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ? AND state = 0", (username,))
+
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
+                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
+
+        return activities
+
+    def get_activities_processed_by_username(self, username):
+        """
+        Retrieves all activities that have been processed for a given username.
+
+        Args:
+            username (str): The username to filter activities by.
+
+        Returns:
+            list of Cron_Activities: A list of Cron_Activities objects representing activities
+                                     with state = 1 (processed) for the specified user.
+        """
+        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ? AND state = 1", (username,))
+
+        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
+                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
+
+        return activities
+
+    def get_co2Amount_by_activity(self, activity_id):
+        """
+        Retrieves the total amount of CO2 reduction associated with a specific activity.
+
+        Args:
+            activity_id (int): The unique identifier of the activity.
+
+        Returns:
+            float or None: The CO2 reduction amount for the given activity_id,
+                           or None if no matching activity is found.
+        """
+        co2Amount = self.cur.execute(
+            "SELECT co2_reduction FROM Cron_Activities WHERE activity_id = ?", (activity_id,)).fetchone()
+        return co2Amount[0] if co2Amount else None
+
+    def get_state_by_activity(self, activity_id):
+        """
+        Retrieves the current state of a specific activity by its activity_id.
+
+        Args:
+            activity_id (int): The unique identifier of the activity.
+
+        Returns:
+            int or None: The state of the activity if found, otherwise None.
+        """
+        state = self.cur.execute(
+            "SELECT state FROM Cron_Activities WHERE activity_id = ?", (activity_id,)).fetchone()
+        return state[0] if state else None
+
+# ---------- END CRON_ACTIVITIES ----------
+
+# ---------- LICENCES ----------
+
+    def check_valid_licence(self, role, licence_number):
+        """
+        Checks if a valid licence exists for a given role.
+        """
+        self.cur.execute("SELECT COUNT(*) FROM Licences WHERE type = ? AND licence_number = ?", (role, licence_number))
+        return self.cur.fetchone()[0] > 0
+
+# ---------- END LICENCES ----------
+
+# ---------- PRODUCTS ----------
 
     def insert_product(self, name, category, co2Emission, nft_token_id):
+        """
+        Inserts a new product record into the Products table.
+
+        Parameters:
+            name (str): The name of the product.
+            category (str): The category to which the product belongs.
+            co2Emission (float): The CO2 emissions associated with the product.
+            nft_token_id (int): The ID of the associated NFT token.
+
+        Returns:
+            int: 0 if the insertion is successful, -1 if a database integrity error occurs.
+        """
         try:
             self.cur.execute("""
                 INSERT INTO Products (name, category, co2Emission, nftID)
@@ -674,7 +804,16 @@ class DatabaseOperations:
 
     def update_product(self, product_id, co2Emission=None):
         """
-        Updates the details of an existing product in the Products table.
+        Updates the CO2 emission data of an existing product in the Products table.
+
+        Parameters:
+            product_id (int): The ID (nftID) of the product to update.
+            co2Emission (float, optional): The new CO2 emission value to set. If None, no update is performed.
+
+        Returns:
+            int:
+                0  -> if the update was successful,
+               -1 -> if no record was found, no change occurred, or a database error happened.
         """
         try:
             query = "UPDATE Products SET "
@@ -702,6 +841,56 @@ class DatabaseOperations:
             print(Fore.RED + f"Error updating product: {e}" + Style.RESET_ALL)
             return -1
 
+# ---------- END PRODUCTS ----------
+
+    def insert_transaction(self, username_from, username_to, amount, type, tx_hash):
+        """
+        Inserts a new transaction record into the Transactions table.
+
+        Args:
+            username_from (str): The username of the sender.
+            username_to (str): The username of the receiver.
+            amount (float): The amount involved in the transaction.
+            type (str): The type/category of the transaction.
+            tx_hash (str): The unique transaction hash identifier.
+
+        Returns:
+            int: 0 if the insertion is successful, -1 if a database integrity error occurs.
+        """
+        try:
+            self.cur.execute("""
+                INSERT INTO Transactions (username_from, username_to, amount, type, tx_hash)
+                VALUES (?, ?, ?, ?, ?)
+                """, (username_from, username_to, amount, type, tx_hash))
+            self.conn.commit()
+            return 0
+        except sqlite3.IntegrityError:
+            return -1
+
+    def get_user_transactions(self, user_username):
+        """
+        Retrieves all transactions involving a specific user, either as sender or receiver.
+
+        Args:
+            user_username (str): The username of the user whose transactions are to be retrieved.
+
+        Returns:
+            list of Transaction: A list of Transaction objects ordered by timestamp descending.
+        """
+        self.cur.execute("""
+                            SELECT * FROM Transactions
+                            WHERE username_from = ? OR username_to = ?
+                            ORDER BY timestamp DESC
+                            """, (user_username, user_username))
+        transactions = [Transaction(id, username_from, username_to, amount, type, tx_hash, timestamp)
+                        for id, username_from, username_to, amount, type, tx_hash, timestamp in self.cur.fetchall()]
+
+        return transactions
+
+# ---------- TRANSACTIONS ----------
+
+# ---------- END TRANSACTIONS ----------
+
     def encrypt_private_k(self, private_key, passwd):
         passwd_hash = hashlib.sha256(passwd.encode('utf-8')).digest()
         key = base64.urlsafe_b64encode(passwd_hash)
@@ -719,235 +908,5 @@ class DatabaseOperations:
         digest = hashlib.scrypt(password.encode(), salt=salt, n=2, r=8, p=1, dklen=64)
         return f"{digest.hex()}${salt.hex()}"
 
-    def check_credentials(self, username, password):
-        result = self.cur.execute("SELECT password FROM Credentials WHERE username = ?", (username,)).fetchone()
-        if result:
-            saved_hash = result[0]
-            params = saved_hash.split('$')
-            hashed_passwd = hashlib.scrypt(password.encode(), salt=bytes.fromhex(params[1]), n=2, r=8, p=1, dklen=64)
-            return hashed_passwd.hex() == params[0]
-        return False
 
-    def get_creds_by_username(self, username):
-        """
-        Retrieves a user's credentials from the Credentials table based on their username.
 
-        Args:
-            username (str): The username of the user whose credentials are to be retrieved.
-
-        Returns:
-            Credentials: A Credentials object containing the user's credentials if found.
-            None: If no credentials are found for the given username.
-        """
-        creds = self.cur.execute("""
-                                SELECT *
-                                FROM Credentials
-                                WHERE username=?""", (username,)).fetchone()
-        if creds is not None:
-            return Credentials(*creds)
-        return None
-
-    def change_password(self, username, new_pass):
-        #if self.check_credentials(username, old_pass): #secondo me non ha senso farlo due volte quindi lo levo
-        new_hash = self.hash_function(new_pass)
-        try:
-            self.cur.execute("UPDATE Credentials SET password = ? WHERE username = ?", (new_hash, username))
-            self.conn.commit()
-            return 0
-        except Exception:
-            return -1
-    #return -1
-
-    def key_exists(self, public_key, private_key):
-        """
-        Checks if either a public key or a private key already exists in the Credentials table.
-
-        Args:
-            public_key (str): The public key to check against existing entries in the database.
-            private_key (str): The private key to check against existing entries in the database.
-
-        Returns:
-            bool: True if either the public or private key is found in the database (indicating they are not unique),
-                  False if neither key is found (indicating they are unique) or an exception occurs during the query.
-        
-        Exceptions:
-            Exception: Catches and prints any exception that occurs during the database operation, returning False.
-        """
-        try:
-            query = "SELECT public_key, private_key FROM Credentials WHERE public_key=? OR private_key=?"
-            existing_users = self.cur.execute(query, (public_key, private_key)).fetchall()
-            return len(existing_users) > 0
-        except Exception as e:
-            print(Fore.RED + f"An error occurred: {e}" + Style.RESET_ALL)
-            return False
-
-    def get_public_key_by_username(self, username):
-        """
-        Retrieve the public key for a given username from the Credentials table.
-
-        Args:
-            username (str): The username of the user whose public key is to be retrieved.
-
-        Returns:
-            str: The public key of the user if found, None otherwise.
-        """
-        try:
-            self.cur.execute("SELECT public_key FROM Credentials WHERE username = ?", (username,))
-            result = self.cur.fetchone()
-            if result:
-                return result[0]  # Return the public key
-            else:
-                return None  # Public key not found
-        except Exception as e:
-            print(Fore.RED + f"An error occurred while retrieving public key: {e}" + Style.RESET_ALL)
-            return None
-
-    def get_user_by_username(self, username):
-        """
-        Retrieves a user's detailed information from table Account.
-
-        Args:
-            username (str): The username of the user.
-
-        Returns:
-            Accounts: An instance of the Accounts class if the user exists, otherwise, None.
-        """
-
-        user = self.cur.execute("""
-                                    SELECT *
-                                    FROM Accounts
-                                    WHERE Accounts.username = ?""", (username,)).fetchone()
-
-        if user is not None:
-            return Accounts(*user)
-        return None
-
-    def get_users(self):
-        """
-        Retrieves all users from the Accounts table.
-        """
-        self.cur.execute("SELECT * FROM Accounts")
-
-        users = [Accounts(id, username, role, name, licence_id, lastname, birthday, birth_place, residence, phone, mail)
-                 for id, username, role, name, licence_id, lastname, birthday, birth_place, residence, phone, mail in self.cur.fetchall()]
-        return users
-
-    def get_activities_to_be_processed(self):
-        """
-        Retrieves all activities that have not been processed yet.
-        """
-        self.cur.execute("SELECT * FROM Cron_Activities WHERE state = 0")
-
-        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
-                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
-
-        return activities
-
-    def get_activities_by_username(self, username):
-        """
-        Retrieves all activities for a given username.
-        """
-        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ?", (username,))
-
-        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
-                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
-
-        return activities
-
-    def get_activities_to_be_processed_by_username(self, username):
-        """
-        Retrieves all activities to be elaborated for a given username.
-        """
-        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ? AND state = 0", (username,))
-
-        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
-                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
-
-        return activities
-
-    def get_activities_processed_by_username(self, username):
-        """
-        Retrieves all activities to be elaborated for a given username.
-        """
-        self.cur.execute("SELECT * FROM Cron_Activities WHERE username = ? AND state = 1", (username,))
-
-        activities = [Cron_Activities(id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction)
-                      for id, description, username, update_datetime, creation_datetime, state, activity_id, co2_reduction in self.cur.fetchall()]
-
-        return activities
-
-    def get_co2Amount_by_activity(self, activity_id):
-        """
-        Retrieves the total amount of CO2 reduced of the activitie.
-        """
-        co2Amount = self.cur.execute(
-            "SELECT co2_reduction FROM Cron_Activities WHERE activity_id = ?", (activity_id,)).fetchone()
-        return co2Amount[0] if co2Amount else None
-
-    def get_state_by_activity(self, activity_id):
-        """
-        Retrieves the state of the activitie .
-        """
-        state = self.cur.execute(
-            "SELECT state FROM Cron_Activities WHERE activity_id = ?", (activity_id,)).fetchone()
-        return state[0] if state else None
-
-    def update_activity_state(self, activitie_id, state):
-        """
-        Updates the state of an activity.
-        """
-        try:
-            self.cur.execute("""
-            UPDATE Cron_Activities 
-            SET state = ? 
-            WHERE activity_id = ?""",
-            (state, activitie_id))
-            self.conn.commit()
-            return 0
-        except sqlite3.Error:
-            return -1
-
-    def get_helpers(self):
-        """
-        Retrieves all public_keys of potential helpers.
-        """
-        self.cur.execute("""
-                         SELECT c.public_key
-                         FROM Credentials c
-                         JOIN Accounts a ON c.username = a.username
-                         WHERE a.type != 'CERTIFIER'
-                         """)
-        public_keys = [row[0] for row in self.cur.fetchall()]
-
-        return public_keys
-
-    def insert_transaction(self, username_from, username_to, amount, type, tx_hash):
-        try:
-            self.cur.execute("""
-                INSERT INTO Transactions (username_from, username_to, amount, type, tx_hash)
-                VALUES (?, ?, ?, ?, ?)
-                """, (username_from, username_to, amount, type, tx_hash))
-            self.conn.commit()
-            return 0
-        except sqlite3.IntegrityError:
-            return -1
-
-    def get_user_transactions(self, user_username):
-        self.cur.execute("""
-                            SELECT * FROM Transactions
-                            WHERE username_from = ? OR username_to = ?
-                            ORDER BY timestamp DESC
-                            """, (user_username, user_username))
-        transactions = [Transaction(id, username_from, username_to, amount, type, tx_hash, timestamp)
-                        for id, username_from, username_to, amount, type, tx_hash, timestamp in self.cur.fetchall()]
-
-        return transactions
-
-    def get_username_by_public_key(self, public_key):
-        """
-        Retrieves the username associated with a given public key.
-        """
-        self.cur.execute(
-            "SELECT username FROM Credentials WHERE public_key = ?", (public_key,))
-        result = self.cur.fetchone()
-        return result[0] if result else None
