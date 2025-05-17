@@ -10,3 +10,4 @@ accounts.txt
 *.log
 action_logs.txt
 *.pytest_cache
+SupplyChain
