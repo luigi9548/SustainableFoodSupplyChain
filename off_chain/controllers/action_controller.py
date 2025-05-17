@@ -27,7 +27,7 @@ class ActionController:
         self.http_provider = http_provider
         self.w3 = Web3(Web3.HTTPProvider(self.http_provider))
         assert self.w3.is_connected(), Fore.RED + "Failed to connect to Ethereum node." + Style.RESET_ALL
-        self.load_contracts()
+        self.contracts = {}  # Dictionary to store uploaded contracts
 
     def load_contracts(self, contracts_directory="on_chain/"):
         """
@@ -37,34 +37,39 @@ class ActionController:
         Args:
             contracts_directory (str): Directory where contract files are stored.
         """
-        self.contracts = {}  # Dictionary to store uploaded contracts
         address_path = ""
         abi_path = ""
         contract_name = ""
 
         try:
             for filename in os.listdir(contracts_directory):
-                if filename.endswith("_address.txt"):
-                    contract_name = filename.replace("_address.txt", "")
-                    address_path = os.path.join(contracts_directory, filename)
-                    abi_path = os.path.join(contracts_directory, f"{contract_name}_abi.json")
+                # Considera solo i file *_address.txt
+                if not filename.endswith("_address.txt"):
+                    continue
+
+                contract_name = filename.replace("_address.txt", "")
+                address_path = os.path.join(contracts_directory, filename)
+                abi_path = os.path.join(contracts_directory, f"{contract_name}_abi.json")
 
                 # Verifica che entrambi i file esistano
                 if os.path.exists(address_path) and os.path.exists(abi_path):
-                    with open(address_path, 'r') as file:
-                        contract_address = file.read().strip()
-                    with open(abi_path, 'r') as file:
-                        contract_abi = json.load(file)
+                    with open(address_path, 'r') as f:
+                        contract_address = f.read().strip()
+                    with open(abi_path, 'r') as f:
+                        contract_abi = json.load(f)
 
                     if contract_address and contract_abi:
                         self.contracts[contract_name] = self.w3.eth.contract(
-                            address=contract_address, abi=contract_abi
+                            address=contract_address,
+                            abi=contract_abi
                         )
                         log_msg(f"Contract '{contract_name}' loaded with address: {contract_address}")
                     else:
-                        log_error(f"Invalid data in files for contract '{contract_name}'. Please check the files.")
+                        log_error(f"Invalid data in files for contract '{contract_name}'. "
+                                  f"Please check {_address.txt} and {_abi.json}.")
                 else:
-                    log_error(f"Missing files for contract '{contract_name}'. Expected {contract_name}_address.txt and {contract_name}_abi.json.")
+                    log_error(f"Missing files for contract '{contract_name}'. "
+                              f"Expected '{contract_name}_address.txt' and '{contract_name}_abi.json'.")
 
             if not self.contracts:
                 log_error("No valid contracts found. Deploy contracts first.")
@@ -113,8 +118,6 @@ class ActionController:
                 with open(abi_path, 'w') as file:
                     json.dump(contract.abi, file)
 
-                self.load_contracts()
-
                 log_msg(f"Contract '{contract_name}' deployed at {contract.address} and initialized.")
 
         except Exception as e:
@@ -134,6 +137,9 @@ class ActionController:
             The result returned by the contract function.
         """
         try:
+            if contract_name not in self.contracts:
+                raise ValueError(
+                    f"Contract '{contract_name}' not loaded. Please load the contract first.")
             result = self.contracts[contract_name].functions[function_name](*args).call()
             log_msg(f"Data read from function: {function_name}, contract: {contract_name}: {result}")
             return result

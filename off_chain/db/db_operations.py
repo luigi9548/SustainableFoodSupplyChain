@@ -197,6 +197,18 @@ class DatabaseOperations:
             print(Fore.RED + f'Internal error: {e}' + Style.RESET_ALL)
             return -1
 
+    def get_credentials_id_by_username(self, username):
+        try:
+            self.cur.execute("SELECT id FROM Credentials WHERE username = ?", (username,))
+            result = self.cur.fetchone()
+            if result:
+                return result[0]
+            else:
+                return None
+        except sqlite3.Error as e:
+            print(Fore.RED + f"Error retrieving credentials ID: {e}" + Style.RESET_ALL)
+            return None
+
     def update_creds(self, id, username=None, password=None, public_key=None, private_key=None, temp_code=None, temp_code_validity=None):
         """
         Updates an existing credentials record in the database.
