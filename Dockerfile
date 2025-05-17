@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y curl gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 #Helps not exposing warnings on the container
-ENV PYTHONWARNINGS="ignore"
+#ENV PYTHONWARNINGS="ignore"
 
 #Helps exposing colorized output
 ENV TERM xterm-256color
