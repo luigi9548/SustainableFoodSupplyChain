@@ -546,8 +546,9 @@ class DatabaseOperations:
             INSERT INTO Activities (type, description) 
             VALUES (?, ?)""",
              (type, description))
+            activity_id = self.cur.lastrowid 
             self.conn.commit()
-            return 0
+            return activity_id
         except sqlite3.IntegrityError:
             return -1
 
