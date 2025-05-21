@@ -1,5 +1,5 @@
 from models.model_base import Model
-from colorama import Fore, Style, init
+from colorama import Fore, Style
 
 class Transaction(Model):
     """

@@ -7,6 +7,10 @@ truffle-config.js
 *.venv
 accounts.txt
 *_address.txt
+credentials.txt
+password.txt
+accounts.txt
 *.log
 action_logs.txt
 *.pytest_cache
+SupplyChain

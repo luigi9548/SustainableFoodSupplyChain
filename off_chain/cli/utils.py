@@ -4,16 +4,12 @@ displaying data etc..
 """
 
 import datetime
-import math
 import re
 import click
-import getpass
-import time
 import random
 from colorama import Fore, Style, init
-from rich.console import Console
-from rich.table import Table
 import maskpass
+import os
 
 from controllers.controller import Controller
 from controllers.action_controller import ActionController
@@ -35,7 +31,7 @@ class Utils:
     PAGE_SIZE = 3
     current_page = 0
 
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, act_controller : ActionController):
 
         """
         Initializes the Utils class with a session object.
@@ -52,8 +48,31 @@ class Utils:
 
         self.session = session
         self.controller = Controller(session)
-        self.act_controller = ActionController()
+        self.act_controller = act_controller
         self.today_date = str(datetime.date.today())
+
+    def contract_files_exist(self, contract_names_or_files, contracts_dir="on_chain"):
+        """
+        Checks if both the ABI and address files exist for each given contract.
+
+        Args:
+            contract_names_or_files (list): List of contract names or filenames (e.g., "CarbonCreditToken.sol").
+            contracts_dir (str): Directory where ABI and address files are stored.
+
+        Returns:
+            bool: True if all required files exist, False otherwise.
+        """
+        for item in contract_names_or_files:
+            contract_name = os.path.splitext(os.path.basename(item))[0]  # Remove path and extension
+
+            abi_path = os.path.join(contracts_dir, f"{contract_name}_abi.json")
+            address_path = os.path.join(contracts_dir, f"{contract_name}_address.txt")
+
+            if not (os.path.exists(abi_path) and os.path.exists(address_path)):
+                return False
+
+        return True
+
 
     def update_profile(self, username, role):
         """
