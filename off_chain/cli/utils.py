@@ -370,6 +370,11 @@ class Utils:
         to_role = to_user.type
         from_address = self.controller.get_public_key_by_username(username)
 
+        # Check if the transfer is valid
+        if not self.is_valid_transfer(role, to_role):
+            print(Fore.RED + 'Transfer not allowed between these roles.\n' + Style.RESET_ALL)
+            return
+
         proceed = input(f"Do you want to transfer the NFT from {role} to {to_role}? (Y/n): ")
         if proceed.strip().upper() == "Y":
             # Chiamata alla funzione che interagisce con lo smart contract
@@ -381,6 +386,32 @@ class Utils:
                 print(Fore.RED + 'Error transferring product!\n' + Style.RESET_ALL)
         else:
             print("NFT transfer canceled.")
+
+    def is_valid_transfer(self, from_role: str, to_role: str) -> bool:
+        """
+        Checks if a transfer between two roles is valid based on predefined rules.
+        Args:
+            from_role (str): The role of the sender.
+            to_role (str): The role of the recipient.
+            Returns:
+                bool: True if the transfer is valid, False otherwise.
+        """
+
+        valid_transitions = {
+            "FARMER": "CARRIER",
+            "CARRIER": ["PRODUCER", "SELLER"],
+            "PRODUCER": "CARRIER"
+        }
+
+        # Normalizza i ruoli a lettere maiuscole (come nella logica Solidity)
+        from_role = from_role.upper()
+        to_role = to_role.upper()
+
+        allowed = valid_transitions.get(from_role)
+
+        if isinstance(allowed, list):
+            return to_role in allowed
+        return to_role == allowed
 
     def display_user_nfts(self, username):
         """

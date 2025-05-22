@@ -25,7 +25,6 @@ class DatabaseOperations:
         self.insert_test_records()
         self.today_date = datetime.date.today().strftime('%Y-%m-%d')
 
-    # Metodo da eliminare, utilizzato temporaneamente per debugging
     def _create_new_table(self):
         """
         Creates necessary tables in the database if they are not already present.
@@ -77,7 +76,6 @@ class DatabaseOperations:
                         FOREIGN KEY (licence_id) REFERENCES Licences(id)
                         );''')
 
-        # Licences table to verufy the authenticity of role and mitigate misuese (aggiorno io le tabelle sul misuso, in fase di inserimento utente verifichiamo al sua licenza)
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Licences (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
