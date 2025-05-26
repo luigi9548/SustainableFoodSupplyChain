@@ -32,7 +32,7 @@ class Controller:
 
 # ---------- ACCOUNTS ----------
 
-    def insert_actor_info(self, role: str, username: str, name: str, lastname: str, actorLicense: int, residence: str, birthdayPlace: str, birthday: str, mail: str, phone: str):
+    def insert_actor_info(self, role: str, username: str, name: str, lastname: str,  residence: str, birthdayPlace: str, birthday: str, mail: str, phone: str):
         """
         Inserts a new actor record into the Accounts table in the database.
 
@@ -41,7 +41,6 @@ class Controller:
             username (str): The username of the actor.
             name (str): The first name of the actor.
             lastname (str): The last name of the actor.
-            actorLicense (int): The license number of the actor.
             residence (str): The residence of the actor.
             birthdayPlace (str): The birth place of the actor.
             birthday (str): The birthday of the actor (format YYYY-MM-DD).
@@ -52,10 +51,9 @@ class Controller:
             int: 0 if the insertion was successful, -1 if an integrity error occurred, such as violating unique constraints
                 or foreign key references.
         """
-        if not self.db_ops.check_valid_licence(role, actorLicense):
-               return -2  # Or another code indicating license failure
+        
     
-        insertion_code = self.db_ops.insert_actor(role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone)
+        insertion_code = self.db_ops.insert_actor(role, username, name, lastname, residence, birthdayPlace, birthday, mail, phone)
 
         if insertion_code == 0:
             user = self.get_user_by_username(username)
@@ -507,9 +505,12 @@ class Controller:
     #2fa debug and test
 
     # mailer
-    def send_2fa_code(email_address, code):
-        sender_email = ""
-        sender_password = ""  
+    def send_2fa_code(self, email_address, code):
+        sender_email = "fabreva@gmail.com"
+        # Password generated for new 2fa gmail
+        # The App it's called softwareSecurity in personal gmail account for test the 2fa
+        # to do -> change to production after test
+        sender_password = "tynt nfwb zsin asku"  
 
         msg = EmailMessage()
         msg.set_content(f"Your verification code is: {code}")
@@ -518,12 +519,16 @@ class Controller:
         msg["To"] = email_address
 
         context = ssl.create_default_context()
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-            server.login(sender_email, sender_password)
-            server.send_message(msg)
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+                 server.login(sender_email, sender_password)
+                 server.send_message(msg)
+            print("2FA code sent successfully.")
+        except Exception as e:
+            print("Failed to send email:", e)
 
     # generate random atp code
-    def generate_code():
+    def generate_code(self):
         return str(random.randint(100000, 999999))
     #end debug 2fa     
 

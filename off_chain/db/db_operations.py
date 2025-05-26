@@ -59,28 +59,22 @@ class DatabaseOperations:
                         UPDATE Credentials SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
                         END;''')
 
-        # licence it's mandatory for each actor
+        
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Accounts (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         username TEXT NOT NULL,
                         type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
                         name TEXT NOT NULL,
-                        licence_id INTEGER NOT NULL,
                         lastname TEXT NOT NULL,
                         birthday TEXT NOT NULL,
                         birth_place TEXT,
                         residence TEXT,
                         phone TEXT,
                         mail TEXT,
-                        FOREIGN KEY (username) REFERENCES Credentials(username),
-                        FOREIGN KEY (licence_id) REFERENCES Licences(id)
+                        FOREIGN KEY (username) REFERENCES Credentials(username)
                         );''')
 
-        self.cur.execute('''CREATE TABLE IF NOT EXISTS Licences (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
-                    licence_number TEXT NOT NULL UNIQUE
-                    );''')
+       
 
 
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Activities (
@@ -152,12 +146,6 @@ class DatabaseOperations:
         self.conn.commit()
 
     def insert_test_records(self):
-        self.cur.execute('''INSERT INTO Licences (type, licence_number) VALUES
-                            ('FARMER', '2001'),
-                            ('CARRIER', '2002'),
-                            ('SELLER', '2003'),
-                            ('PRODUCER', '2004'),
-                            ('CERTIFIER', '2005');''')
 
         self.cur.execute('''INSERT INTO Activities (type, description) VALUES
                             ('investment in a project for reduction', 'Investing in solar panels'),
@@ -180,7 +168,7 @@ class DatabaseOperations:
 
 # ---------- ACCOUNTS ----------
 
-    def insert_actor(self, role, username, name, lastname, actorLicense, residence, birthdayPlace, birthday, mail, phone):
+    def insert_actor(self, role, username, name, lastname,  residence, birthdayPlace, birthday, mail, phone):
         """
         Inserts a new actor record into the Accounts table in the database.
 
@@ -189,7 +177,6 @@ class DatabaseOperations:
             username (str): The username of the actor.
             name (str): The first name of the actor.
             lastname (str): The last name of the actor.
-            actorLicense (int): The license number of the actor.
             residence (str): The residence of the actor.
             birthdayPlace (str): The birth place of the actor.
             birthday (str): The birthday of the actor (format YYYY-MM-DD).
@@ -207,13 +194,12 @@ class DatabaseOperations:
         try:
             self.cur.execute("""
                             INSERT INTO Accounts
-                            (username, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) """,
+                            (username, type, name,  lastname, birthday, birth_place, residence, phone, mail) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) """,
                             (
                                 username,
                                 role,
-                                name,
-                                actorLicense,
+                                name,                             
                                 lastname,
                                 birthday,
                                 birthdayPlace,
@@ -268,8 +254,8 @@ class DatabaseOperations:
         """
         self.cur.execute("SELECT * FROM Accounts")
 
-        users = [Accounts(id, username, role, name, licence_id, lastname, birthday, birth_place, residence, phone, mail)
-                 for id, username, role, name, licence_id, lastname, birthday, birth_place, residence, phone, mail in self.cur.fetchall()]
+        users = [Accounts(id, username, role, name,  lastname, birthday, birth_place, residence, phone, mail)
+                 for id, username, role, name,  lastname, birthday, birth_place, residence, phone, mail in self.cur.fetchall()]
         return users
 
     def get_user_by_username(self, username):
@@ -764,16 +750,7 @@ class DatabaseOperations:
 
 # ---------- END CRON_ACTIVITIES ----------
 
-# ---------- LICENCES ----------
 
-    def check_valid_licence(self, role, licence_number):
-        """
-        Checks if a valid licence exists for a given role.
-        """
-        self.cur.execute("SELECT COUNT(*) FROM Licences WHERE type = ? AND licence_number = ?", (role, licence_number))
-        return self.cur.fetchone()[0] > 0
-
-# ---------- END LICENCES ----------
 
 # ---------- PRODUCTS ----------
 

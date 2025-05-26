@@ -6,7 +6,7 @@ class Accounts(Model):
     extending the functionality provided by the Model class.
     """
 
-    def __init__(self, id, username, type, name, licence_id, lastname, birthday, birth_place, residence, phone, mail):
+    def __init__(self, id, username, type, name,  lastname, birthday, birth_place, residence, phone, mail):
         """
         Initializes a new instance of Account class with the provided account  details.
 
@@ -15,7 +15,6 @@ class Accounts(Model):
         - username: The username associated with the account
         - type: The type of account ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')
         - name: The first name of the account holder
-        - licence_id: Licence id that is associated with this account
         - lastname: The last name of the account holder
         - birthday: The birth date of the account holder, stored as a string in the format 'YYYY-MM-DD' ????
         - birth_place: The place of birth of the account holder (optional)
@@ -28,7 +27,6 @@ class Accounts(Model):
         self.username = username
         self.type = type
         self.name = name
-        self.licence_id = licence_id
         self.lastname = lastname
         self.birthday = birthday
         self.birth_place = birth_place
@@ -48,9 +46,6 @@ class Accounts(Model):
 
     def get_name(self):
         return self.name
-
-    def get_licence_id(self):
-        return self.licence_id
 
     def get_lastname(self):
         return self.lastname
@@ -82,9 +77,6 @@ class Accounts(Model):
     
     def set_name(self, name):
         self.name = name
-
-    def set_licence_id(self, licence_id):
-        self.licence_id = licence_id
 
     def set_lastname(self, lastname):
         self.lastname = lastname

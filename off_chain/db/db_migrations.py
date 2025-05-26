@@ -37,29 +37,22 @@ cur.execute('''CREATE TRIGGER update_Credentials_timestamp
             UPDATE Credentials SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
             END;''')
 
-# licence it's mandatory for each actor
+
 cur.execute('''CREATE TABLE Accounts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
             type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
             name TEXT NOT NULL,
-            licence_id INTEGER NOT NULL,
             lastname TEXT NOT NULL,
             birthday TEXT NOT NULL,
             birth_place TEXT,
             residence TEXT,
             phone TEXT,
             mail TEXT,
-            FOREIGN KEY (username) REFERENCES Credentials(username),
-            FOREIGN KEY (licence_id) REFERENCES Licences(id)
+            FOREIGN KEY (username) REFERENCES Credentials(username)
             );''')
 
-# Licences table to verufy the authenticity of role and mitigate misuese (aggiorno io le tabelle sul misuso, in fase di inserimento utente verifichiamo al sua licenza)
-cur.execute('''CREATE TABLE Licences (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT CHECK(type IN ('FARMER', 'CARRIER', 'SELLER', 'PRODUCER', 'CERTIFIER')) NOT NULL,
-            licence_number TEXT NOT NULL UNIQUE
-            );''')
+
 
 
 cur.execute('''CREATE TABLE Activities (
@@ -126,16 +119,7 @@ cur.execute('''CREATE TRIGGER IF NOT EXISTS update_Products_timestamp
                         UPDATE Products SET update_datetime = CURRENT_TIMESTAMP WHERE id = OLD.id;
                         END;''')
 
-# Inserting 10 random licences for each role except 'CERTIFICATORE'
-# (per mitigare disuso e abuso verranne inviate via mail le licenze ad ogni certificatore, mi occupo io della cosa e di correggere la relazione)
-def generate_random_licence():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-roles = ['FARMER', 'CARRIER', 'SELLER', 'PRODUCER']
-for role in roles:
-    for _ in range(10):
-        licence_number = generate_random_licence()
-        cur.execute("INSERT INTO Licences (type, licence_number) VALUES (?, ?)", (role, licence_number))
 
 con.commit()
 con.close()
