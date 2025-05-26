@@ -100,6 +100,22 @@ class CommandLineInterface:
 
             login_code, role = self.controller.login(username, passwd)
 
+            user = self.controller.get_user_by_username(username)
+
+            code = self.controller.generate_code()
+            self.controller.send_2fa_code(user.get_mail(), code)
+            print(Fore.YELLOW + "A verification code has been sent to your email." + Style.RESET_ALL)
+
+            for attempt in range(3):
+                entered_code = input("Enter the 6-digit code sent to your email: ")
+                if entered_code == code:
+                    print(Fore.GREEN + "Email verified successfully!" + Style.RESET_ALL)
+                    break
+                else:
+                    print(Fore.RED + "Incorrect code. Try again." + Style.RESET_ALL)
+            else:
+                login_code == -3
+
             if login_code == 1:
                 print(Fore.GREEN + '\nYou have succesfully logged in!\n' + Style.RESET_ALL)
                 if role == 'CERTIFIER':
